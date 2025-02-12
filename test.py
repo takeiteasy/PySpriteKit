@@ -6,7 +6,9 @@ class TestScene(k.Scene):
         "width": 800,
         "height": 600,
         "title": "Test",
-        "exit_key": k.KeyboardKey.KEY_ESCAPE
+        "exit_key": k.KeyboardKey.KEY_ESCAPE,
+        "flags": k.ConfigFlags.FLAG_WINDOW_RESIZABLE,
+        "fps": 60
     }
     
     def enter(self):

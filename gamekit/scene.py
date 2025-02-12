@@ -1,6 +1,5 @@
-from contextlib import contextmanager
 from .actor import ActorType
-from .parent import ParentNode
+from .parent import Parent
 from .fsm import FiniteStateMachine
 import pyray as r
 
@@ -8,11 +7,11 @@ __scene__ = []
 __next_scene = None
 __drop_scene = None
 
-class Scene(FiniteStateMachine, ParentNode):
+class Scene(FiniteStateMachine, Parent):
     window_attrs: dict = {}
 
     def __init__(self, **kwargs):
-        ParentNode.__init__(self)
+        Parent.__init__(self)
         FiniteStateMachine.__init__(self, **kwargs)
         self.projection = r.matrix_identity()
     
@@ -67,7 +66,11 @@ def main_scene(cls):
     r.init_window(cls.window_attrs['width'] if "width" in cls.window_attrs else 800,
                   cls.window_attrs['height'] if "height" in cls.window_attrs else 600,
                   cls.window_attrs['title'] if "title" in cls.window_attrs else "GameKit")
-    r.set_exit_key(cls.window_attrs['exit_key'] if "exit_key" in cls.window_attrs else r.KeyboardKey.KEY_ESCAPE)
+    r.set_config_flags(cls.window_attrs['flags'] if "flags" in cls.window_attrs else r.ConfigFlags.FLAG_WINDOW_RESIZABLE)
+    if "fps" in cls.window_attrs:
+        r.set_target_fps(cls.window_attrs['fps'])
+    if "exit_key" in cls.window_attrs:
+        r.set_exit_key(cls.window_attrs['exit_key'])
     scn = cls()
     __scene__.append(scn)
     scn.enter()
