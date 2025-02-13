@@ -107,30 +107,30 @@ class EllipseActor2D(ShapeActor2D, BaseShape):
 @dataclass
 class SpriteActor2D(Actor2D):
     texture: r.Texture2D = None
-    source: r.Rectangle = r.Rectangle(0, 0, 0, 0) # replace r.Rectangle with Rectangle
+    source: r.Rectangle = r.Rectangle(0, 0, 0, 0)
     origin: Vector2 = field(default_factory=Vector2)
 
     def draw(self):
         if not self.texture:
             return
         if self.source.width == 0 or self.source.height == 0:
-            self.source = r.Rectangle(0, 0, self.texture.width, self.texture.height)
+            self.source = Rectangle(0, 0, self.texture.width, self.texture.height)
         r.draw_texture_pro(self.texture, self.source, self.position.x, self.position.y, self.origin.x, self.origin.y, self.rotation, self.scale, self.color)
 
 class Line2D(LineActor2D):
     pass
 
-class Rectangle2D(RectangleActor2D):
+class Rectangle(RectangleActor2D):
     pass
 
-class Circle2D(CircleActor2D):
+class Circle(CircleActor2D):
     pass
 
-class Triangle2D(TriangleActor2D):
+class Triangle(TriangleActor2D):
     pass
 
-class Ellipse2D(EllipseActor2D):
+class Ellipse(EllipseActor2D):
     pass
 
-class Sprite2D(SpriteActor2D):
+class Sprite(SpriteActor2D):
     pass

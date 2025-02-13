@@ -1,149 +1,10 @@
 import numpy as np
-import inspect
-from functools import wraps
 from numbers import Number
 from multipledispatch import dispatch
-
-def all_parameters_as_numpy_arrays(fn):
-    """Converts all of a function's arguments to numpy arrays.
-
-    Used as a decorator to reduce duplicate code.
-    """
-    # wraps allows us to pass the docstring back
-    # or the decorator will hide the function from our doc generator
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        args = list(args)
-        for i, v in enumerate(args):
-            if v is not None:
-                args[i] = np.asarray(v)
-        for k,v in kwargs.items():
-            if v is not None:
-                kwargs[k] = np.asarray(v)
-        return fn(*args, **kwargs)
-    return wrapper
-
-def parameters_as_numpy_arrays(*args_to_convert):
-    """Converts specific arguments to numpy arrays.
-
-    Used as a decorator to reduce duplicate code.
-
-    Arguments are specified by their argument name.
-    For example
-    ::
-
-        @parameters_as_numpy_arrays('a', 'b', 'optional')
-        def myfunc(a, b, *args, **kwargs):
-            pass
-
-        myfunc(1, [2,2], optional=[3,3,3])
-    """
-    def decorator(fn):
-        # wraps allows us to pass the docstring back
-        # or the decorator will hide the function from our doc generator
-
-        try:
-            getfullargspec = inspect.getfullargspec
-        except AttributeError:
-            getfullargspec = inspect.getargspec
-
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            # get the arguments of the function we're decorating
-            fn_args = getfullargspec(fn)
-
-            # convert any values that are specified
-            # if the argument isn't in our list, just pass it through
-
-            # convert the *args list
-            # we zip the args with the argument names we received from
-            # the inspect function
-            args = list(args)
-            for i, (k, v) in enumerate(zip(fn_args.args, args)):
-                if k in args_to_convert and v is not None:
-                    args[i] = np.array(v)
-
-            # convert the **kwargs dict
-            for k,v in kwargs.items():
-                if k in args_to_convert and v is not None:
-                    kwargs[k] = np.array(v)
-
-            # pass the converted values to our function
-            return fn(*args, **kwargs)
-        return wrapper
-    return decorator
-
-def solve_quadratic_equation(a, b, c):
-    """Quadratic equation solver.
-    Solve function of form f(x) = ax^2 + bx + c
-
-    :param float a: Quadratic part of equation.
-    :param float b: Linear part of equation.
-    :param float c: Static part of equation.
-    :rtype: list
-    :return: List contains either two elements for two solutions, one element for one solution, or is empty if
-        no solution for the quadratic equation exists.
-    """
-    delta = b * b - 4 * a * c
-    if delta > 0:
-        # Two solutions
-        # See https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
-        # Why not use simple form:
-        # s1 = (-b + math.sqrt(delta)) / (2 * a)
-        # s2 = (-b - math.sqrt(delta)) / (2 * a)
-        q = -0.5 * (b + np.math.sqrt(delta)) if b > 0 else -0.5 * (b - np.math.sqrt(delta))
-        s1 = q / a
-        s2 = c / q
-        return [s1, s2]
-    elif delta == 0:
-        # One solution
-        return [-b / (2 * a)]
-    else:
-        # No solution exists
-        return list()
-
-class NpProxy(object):
-    def __init__(self, index):
-        self._index = index
-
-    def __get__(self, obj, cls):
-        return obj[self._index]
-
-    def __set__(self, obj, value):
-        obj[self._index] = value
-
-class BaseObject(np.ndarray):
-    _shape = None
-
-    def __new__(cls, obj):
-        # ensure the object matches the required shape
-        obj.shape = cls._shape
-        return obj
-
-    def _unsupported_type(self, method, other):
-        raise ValueError('Cannot {} a {} to a {}'.format(method, type(other).__name__, type(self).__name__))
-
-    ########################
-    # Redirect assignment operators
-    def __iadd__(self, other):
-        self[:] = self.__add__(other)
-        return self
-
-    def __isub__(self, other):
-        self[:] = self.__sub__(other)
-        return self
-
-    def __imul__(self, other):
-        self[:] = self.__mul__(other)
-        return self
-
-    def __idiv__(self, other):
-        self[:] = self.__div__(other)
-        return self
-
+from .math import all_parameters_as_numpy_arrays, parameters_as_numpy_arrays, BaseObject, BaseVector, BaseVector2, BaseVector3, BaseVector4, BaseMatrix, BaseMatrix3, BaseMatrix4
 
 @all_parameters_as_numpy_arrays
-def _normalise(vec):    # TODO: mark as deprecated
+def vector_normalize(vec):    # TODO: mark as deprecated
     """normalizes an Nd list of vectors or a single vector
     to unit length.
 
@@ -175,7 +36,7 @@ def _normalise(vec):    # TODO: mark as deprecated
 
 
 @all_parameters_as_numpy_arrays
-def _squared_length(vec):
+def vector_squared_length(vec):
     """Calculates the squared length of a vector.
 
     Useful when trying to avoid the performance
@@ -193,7 +54,7 @@ def _squared_length(vec):
     return lengths
 
 @all_parameters_as_numpy_arrays
-def _length(vec):
+def vector_length(vec):
     """Returns the length of an Nd list of vectors
     or a single vector.
 
@@ -221,7 +82,7 @@ def _length(vec):
 
 
 @parameters_as_numpy_arrays('vec')
-def _set_length(vec, len):
+def vector_set_length(vec, len):
     """Renormalizes an Nd list of vectors or a single vector to 'length'.
 
     The vector is **not** changed in place.
@@ -252,7 +113,7 @@ def _set_length(vec, len):
 
 
 @all_parameters_as_numpy_arrays
-def _dot(v1, v2):
+def vector_dot(v1, v2):
     """Calculates the dot product of two vectors.
 
     :param numpy.array v1: an Nd array with the final dimension
@@ -268,7 +129,7 @@ def _dot(v1, v2):
     return np.sum(v1 * v2, axis=-1)
 
 @parameters_as_numpy_arrays('v1', 'v2')
-def _interpolate(v1, v2, delta):
+def vector_interpolate(v1, v2, delta):
     """Interpolates between 2 arrays of vectors (shape = N,3)
     by the specified delta (0.0 <= delta <= 1.0).
 
@@ -300,7 +161,7 @@ def _interpolate(v1, v2, delta):
     delta_t = t1 - t0
     return (t1 - t) / delta_t * v1 + (t - t0) / delta_t * v2
 
-def _cross(v1, v2):
+def vector_cross(v1, v2):
     """Calculates the cross-product of two vectors.
 
     :param numpy.array v1: an Nd array with the final dimension
@@ -312,7 +173,7 @@ def _cross(v1, v2):
     """
     return np.cross(v1, v2)
 
-def _generate_normals(v1, v2, v3, normalize_result=True):
+def vector_generate_normals(v1, v2, v3, normalize_result=True):
     r"""Generates a normal vector for 3 vertices.
 
     The result is a normalized vector.
@@ -355,104 +216,49 @@ def _generate_normals(v1, v2, v3, normalize_result=True):
     # we assume opengl counter-clockwise ordering
     a = v1 - v2
     b = v3 - v2
-    n = _cross(b, a)
+    n = vector_cross(b, a)
     if normalize_result:
-        n = _normalise(n)
+        n = vector_normalize(n)
     return n
 
-class BaseVector(BaseObject):
-    @classmethod
-    def from_matrix44_translation(cls, matrix, dtype=None):
-        return cls(cls._module.create_from_matrix44_translation(matrix, dtype))
-
+class VectorCore:
     def normalize(self):
         self[:] = self.normalized
 
     @property
     def normalized(self):
-        return type(self)(self._module.normalize(self))
+        return vector_normalize(self)
 
     def normalise(self):    # TODO: mark as deprecated
         self[:] = self.normalized
 
     @property
     def normalised(self):    # TODO: mark as deprecated
-        return type(self)(self._module.normalize(self))
+        return vector_normalize(self)
 
     @property
     def squared_length(self):
-        return self._module.squared_length(self)
+        return vector_squared_length(self)
 
     @property
     def length(self):
-        return self._module.length(self)
+        return vector_length(self)
 
     @length.setter
     def length(self, length):
-        self[:] = _set_length(self, length)
+        self[:] = vector_set_length(self, length)
 
     def dot(self, other):
-        return _dot(self, type(self)(other))
+        return vector_dot(self, type(self)(other))
 
     def cross(self, other):
-        return type(self)(_cross(self[:3], other[:3]))
+        return vector_cross(self[:3], other[:3])
 
     def interpolate(self, other, delta):
-        return type(self)(_interpolate(self, type(self)(other), delta))
+        return vector_interpolate(self, other, delta)
 
     def normal(self, v2, v3, normalize_result=True):
-        return type(self)(_generate_normals(self, type(self)(v2), type(self)(v3), normalize_result))
-
-class BaseVector2(BaseVector):
-    _shape = (2,)
-    #: The X value of this Vector.
-    x = NpProxy(0)
-    #: The Y value of this Vector.
-    y = NpProxy(1)
-    #: The X,Y values of this Vector as a numpy.ndarray.
-    xy = NpProxy([0,1])
-    #: The X,Y,Z values of this Vector as a numpy.ndarray.
-    yx = NpProxy([1,0])
-
-class BaseVector3(BaseVector):
-    _shape = (3,)
-    #: The X value of this Vector.
-    x = NpProxy(0)
-    #: The Y value of this Vector.
-    y = NpProxy(1)
-    #: The Z value of this Vector.
-    z = NpProxy(2)
-    #: The X,Y values of this Vector as a numpy.ndarray.
-    xy = NpProxy([0,1])
-    #: The X,Y,Z values of this Vector as a numpy.ndarray.
-    xyz = NpProxy([0,1,2])
-    #: The X,Z values of this Vector as a numpy.ndarray.
-    xz = NpProxy([0,2])
-
-class BaseVector4(BaseVector):
-    _shape = (4,)
-    #: The X value of this Vector.
-    x = NpProxy(0)
-    #: The Y value of this Vector.
-    y = NpProxy(1)
-    #: The Z value of this Vector.
-    z = NpProxy(2)
-    #: The W value of this Vector.
-    w = NpProxy(3)
-    #: The X,Y values of this Vector as a numpy.ndarray.
-    xy = NpProxy([0,1])
-    #: The X,Y,Z values of this Vector as a numpy.ndarray.
-    xyz = NpProxy([0,1,2])
-    #: The X,Y,Z,W values of this Vector as a numpy.ndarray.
-    xyzw = NpProxy(slice(0,4))
-    #: The X,Z values of this Vector as a numpy.ndarray.
-    xz = NpProxy([0,2])
-    #: The X,W values of this Vector as a numpy.ndarray.
-    xw = NpProxy([0,3])
-    #: The X,Y,W values of this Vector as a numpy.ndarray.
-    xyw = NpProxy([0,1,3])
-    #: The X,Z,W values of this Vector as a numpy.ndarray.
-    xzw = NpProxy([0,2,3])
+        return vector_generate_normals(self, v2, v3, normalize_result)
 
 @parameters_as_numpy_arrays('vector')
 def _vector2_from_vector3(vector, dtype=None):
@@ -468,8 +274,7 @@ def _vector2_from_vector4(vector, dtype=None):
     dtype = dtype or vector.dtype
     return np.array([vector[0], vector[1]], dtype=dtype), vector[2], vector[3]
 
-
-class Vector2(BaseVector2):
+class Vector2(BaseVector2, VectorCore):
     @classmethod
     def from_vector3(cls, vector, dtype=None):
         """Create a Vector2 from a Vector3.
@@ -616,10 +421,10 @@ def _vector3_from_vector4(vector, dtype=None):
     return (np.array([vector[0], vector[1], vector[2]], dtype=dtype), vector[3])
 
 @parameters_as_numpy_arrays('mat')
-def _vector3_from_matrix44_translation(mat, dtype=None):
+def create_from_matrix44_translation(mat, dtype=None):
     return np.array(mat[3, :3], dtype=dtype)
 
-class Vector3(BaseVector3):
+class Vector3(BaseVector3, VectorCore):
     @classmethod
     def from_vector4(cls, vector, dtype=None):
         """Create a Vector3 from a Vector4.
@@ -634,6 +439,9 @@ class Vector3(BaseVector3):
             obj = value
             if not isinstance(value, np.ndarray):
                 obj = np.array(value, dtype=dtype)
+            # matrix44
+            if obj.shape in ((4,4,)):
+                obj = create_from_matrix44_translation(obj, dtype=dtype)
         else:
             obj = np.zeros(cls._shape, dtype=dtype)
         obj = obj.view(cls)
@@ -745,20 +553,16 @@ class Vector3(BaseVector3):
         """
         return Vector3(-self)
 
-    @property
-    def vector3(self):
-        return self
-
 @parameters_as_numpy_arrays('vector')
 def _vector4_from_vector3(vector, w=0., dtype=None):
     dtype = dtype or vector.dtype
     return np.array([vector[0], vector[1], vector[2], w], dtype=dtype)
 
 @parameters_as_numpy_arrays('mat')
-def _vector4_from_matrix44_translation(mat, dtype=None):
+def create_from_matrix44_translation(mat, dtype=None):
     return np.array(mat[3, :4], dtype=dtype)
 
-class Vector4(BaseVector4):
+class Vector4(BaseVector4, VectorCore):
     @classmethod
     def from_vector3(cls, vector, w=0.0, dtype=None):
         """Create a Vector4 from a Vector3.
@@ -772,6 +576,9 @@ class Vector4(BaseVector4):
             obj = value
             if not isinstance(value, np.ndarray):
                 obj = np.array(value, dtype=dtype)
+            # matrix44
+            if obj.shape in ((4,4,)):
+                obj = create_from_matrix44_translation(obj, dtype=dtype)
         else:
             obj = np.zeros(cls._shape, dtype=dtype)
         obj = obj.view(cls)
@@ -874,17 +681,3 @@ class Vector4(BaseVector4):
     @dispatch((Number, np.number))
     def __div__(self, other):
         return Vector4(super(Vector4, self).__div__(other))
-
-    ########################
-    # Methods and Properties
-    @property
-    def inverse(self):
-        """Returns the opposite of this vector.
-        """
-        return Vector4(-self)
-
-    @property
-    def vector3(self):
-        """Returns a Vector3 and the W component as a tuple.
-        """
-        return (Vector3(self[:3]), self[3])
