@@ -11,6 +11,4 @@ dist/
 *.egg-info/
 **/*.egg-info/
 .eggs/
-assets/
-assets/**/*
 .vscode/

@@ -1,4 +1,4 @@
-from .vector import Vector2, Vector3
+from .vector import Vector2
 from .parent import Parent, ActorType
 from dataclasses import dataclass, field
 from typing import Optional
@@ -30,6 +30,7 @@ class Actor2D(Actor):
     rotation: float = 0.
     scale: float = 1.
     origin: Vector2 = field(default_factory=lambda: Vector2([0.5, 0.5]))
+    color: r.Color = RAYWHITE
 
     def _offset(self):
         return self.origin * Vector2([-self.width, -self.height])
@@ -40,7 +41,6 @@ class BaseShape:
 
 @dataclass
 class ShapeActor2D(Actor2D):
-    color: r.Color = r.Color(255, 255, 255, 255) # replace r.Color with Color
     wireframe: bool = False
     line_thickness: float = 1.
 
@@ -108,14 +108,28 @@ class EllipseActor2D(ShapeActor2D, BaseShape):
 class SpriteActor2D(Actor2D):
     texture: r.Texture2D = None
     source: r.Rectangle = r.Rectangle(0, 0, 0, 0)
-    origin: Vector2 = field(default_factory=Vector2)
+    dst: r.Rectangle = r.Rectangle(0, 0, 0, 0)
+    scale: Vector2 = field(default_factory=lambda: Vector2([1., 1.]))
+
+    @property
+    def width(self):
+        return self.texture.width
+
+    @property
+    def height(self):
+        return self.texture.height
 
     def draw(self):
         if not self.texture:
             return
         if self.source.width == 0 or self.source.height == 0:
-            self.source = Rectangle(0, 0, self.texture.width, self.texture.height)
-        r.draw_texture_pro(self.texture, self.source, self.position.x, self.position.y, self.origin.x, self.origin.y, self.rotation, self.scale, self.color)
+            self.source = r.Rectangle(0, 0, self.texture.width, self.texture.height)
+        if self.dst.width == 0 or self.dst.height == 0:
+            self.dst = r.Rectangle(self.position.x, self.position.y, self.width, self.height)
+        r.draw_texture_pro(self.texture,
+                           [self.source.x, self.source.y, self.source.width, self.source.height],
+                           [self.dst.x, self.dst.y, self.dst.width * self.scale.x, self.dst.height * self.scale.y],
+                           [*(-self._offset() * self.scale)], self.rotation, self.color)
 
 class Line2D(LineActor2D):
     pass
