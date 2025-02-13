@@ -124,3 +124,21 @@ class SpriteActor2D(Actor2D):
         if self.source.width == 0 or self.source.height == 0:
             self.source = r.Rectangle(0, 0, self.texture.width, self.texture.height)
         r.draw_texture_pro(self.texture, self.source, self.position.x, self.position.y, self.origin.x, self.origin.y, self.rotation, self.scale, self.color)
+
+class Line2D(LineActor2D):
+    pass
+
+class Rectangle2D(RectangleActor2D):
+    pass
+
+class Circle2D(CircleActor2D):
+    pass
+
+class Triangle2D(TriangleActor2D):
+    pass
+
+class Ellipse2D(EllipseActor2D):
+    pass
+
+class Sprite2D(SpriteActor2D):
+    pass
