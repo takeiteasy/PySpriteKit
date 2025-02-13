@@ -26,15 +26,26 @@ def find_file(name, extensions, folders):
             return file
     raise Exception(f"file {file} does not exist")
 
+__image_extensions = ['.png', '.bmp', '.tga', '.jpg', '.jpeg', '.gif', '.qoi', '.psd', '.dds', '.hdr', '.ktx', '.astc', '.pkm', '.pvr']
+__model_extensions = ['.obj', '.glb', '.gltf', '.iqm', '.vox', '.m3d']
+__vshader_extensions = ['.vs.glsl', '.vsh', '.vert']
+__fshader_extensions = ['.fs.glsl', '.fsh', '.frag']
+
+def _file_locations(name):
+    return ['.', f"data/{name}", name]
+
+def Image(file):
+    return r.load_image(find_file(file, __image_extensions, _file_locations('images')))
+
 def Texture(file):
-    return r.load_texture(find_file(file, ['.png', '.jpg', '.jpeg', '.bmp', '.tga', '.hdr', '.gif', '.psd', '.pic'], ['.', 'data/images', 'images']))
+    return r.load_texture(find_file(file, __image_extensions, _file_locations('images')))
 
 def Shader(vertex_file, fragment_file):
-    return r.load_shader(find_file(vertex_file, ['.vs.glsl', '.vsh', '.vert'], ['.', 'data/shaders', 'shaders']),
-                         find_file(fragment_file, ['.fs.glsl', '.fsh', '.frag'], ['.', 'data/shaders', 'shaders']))
+    return r.load_shader(find_file(vertex_file, __vshader_extensions, _file_locations('shaders')),
+                         find_file(fragment_file, __fshader_extensions, _file_locations('shaders')))
 
 def Model(file):
-    return r.load_model(find_file(file, ['.obj', '.glb', '.gltf', '.iqm', '.vox', '.m3d'], ['.', 'data/models', 'models']))
+    return r.load_model(find_file(file, __model_extensions, _file_locations('models')))
 
 def _fix_key(kname):
     # return is a reserved word, so alias enter to return
