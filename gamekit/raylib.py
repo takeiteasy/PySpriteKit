@@ -5,9 +5,7 @@ import os
 import pathlib
 
 __PATH = pathlib.Path(__file__).parent
-
 __camera = None
-
 __data_dir = ""
 
 def _gen_file_paths(name, extensions, folders):
