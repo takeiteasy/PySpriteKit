@@ -29,6 +29,10 @@ class Actor2D(Actor):
     position: Vector2 = field(default_factory=Vector2)
     rotation: float = 0.
     scale: float = 1.
+    origin: Vector2 = field(default_factory=lambda: Vector2([0.5, 0.5]))
+
+    def _offset(self):
+        return self.position - self.origin * Vector2([self.width, self.height])
 
 class BaseShape:
     draw_func = None
@@ -39,8 +43,8 @@ class BaseLine(BaseShape):
     draw_wire_func = rl.DrawLine
 
 class BaseRectangle(BaseShape):
-    draw_func = rl.DrawRectanglePro
-    draw_wire_func = rl.DrawRectangleLines
+    draw_func = rl.DrawRectangleRec
+    draw_wire_func = rl.DrawRectangleLinesEx
 
 class BaseCircle(BaseShape):
     draw_func = rl.DrawCircle
@@ -58,7 +62,7 @@ class BaseEllipse(BaseShape):
 class ShapeActor2D(Actor2D):
     color: r.Color = r.Color(255, 255, 255, 255) # replace r.Color with Color
     wireframe: bool = False
-    origin: Vector2 = field(default_factory=lambda: Vector2([0.5, 0.5]))
+    line_thickness: float = 1.
 
     def _draw(self, *args, **kwargs):
         if self.wireframe:
@@ -77,25 +81,22 @@ class LineActor2D(ShapeActor2D, BaseLine):
 class RectangleActor2D(ShapeActor2D, BaseRectangle):
     width: float = 1.
     height: float = 1.
-
-    def _draw(self, *args, **kwargs):
-        if self.wireframe:
-            self.__class__.draw_wire_func(*args, **kwargs)
-        else:
-            self.__class__.draw_func(r.Rectangle(self.position.x, self.position.y, self.width, self.height),
-                                     list(self.origin * Vector2([self.width, self.height])),
-                                     self.rotation,
-                                     self.color)
+    origin: Vector2 = field(default_factory=lambda: Vector2([0.5, 0.5]))
 
     def draw(self):
-        self._draw(int(self.position.x), int(self.position.y), int(self.width), int(self.height), self.color)
+        pos = self._offset()
+        rec = r.Rectangle(pos.x, pos.y, self.width, self.height)
+        if self.wireframe:
+            self._draw(rec, self.line_thickness, self.color)
+        else:
+            self._draw(rec, self.color)
 
 @dataclass
 class CircleActor2D(ShapeActor2D, BaseCircle):
     radius: float = 1.
 
     def draw(self):
-        self._draw(self.position.x, self.position.y, self.radius, self.color)
+        self._draw(int(self.position.x), int(self.position.y), self.radius, self.color)
 
 @dataclass
 class TriangleActor2D(ShapeActor2D, BaseTriangle):
@@ -103,7 +104,7 @@ class TriangleActor2D(ShapeActor2D, BaseTriangle):
     position3: Vector2 = field(default_factory=Vector2)
 
     def draw(self):
-        self._draw(self.position.x, self.position.y, self.position2.x, self.position2.y, self.position3.x, self.position3.y, self.color)
+        self._draw([self.position.x, self.position.y], [self.position2.x, self.position2.y], [self.position3.x, self.position3.y], self.color)
 
 @dataclass
 class EllipseActor2D(ShapeActor2D, BaseEllipse):

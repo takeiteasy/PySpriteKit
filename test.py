@@ -16,8 +16,15 @@ class TestScene(gk.Scene):
         self.add_child(gk.RectangleActor2D(name="test",
                                            width=100,
                                            height=100,
-                                           rotation=45.,
                                            color=r.Color(255, 0, 0, 255)))
+        self.add_child(gk.CircleActor2D(name="test",
+                                        position=gk.Vector2([100, 100]),
+                                        radius=100,
+                                        color=r.Color(0, 255, 0, 255)))
+        self.add_child(gk.TriangleActor2D(name="test",
+                                        position2=gk.Vector2([100, 100]),
+                                        position3=gk.Vector2([200, 100]),
+                                        color=r.Color(0, 0, 255, 255)))
 
     def step(self, delta):
         if gk.Keyboard.key_pressed("space"):
