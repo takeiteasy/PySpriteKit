@@ -14,11 +14,11 @@ class Parent:
         for node in nodes if isinstance(nodes, list) else [nodes]:
             self.add_child(node)
 
-    def get_children(self, name: Optional[str] = ""):
+    def find_children(self, name: Optional[str] = ""):
         return [x for x in self.children if x.name == name]
 
     def remove_children(self, name: Optional[str] = ""):
         self.children = [x for x in self.children if x.name != name]
 
-    def clear_children(self):
+    def remove_all_children(self):
         self.children = []

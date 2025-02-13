@@ -1,6 +1,7 @@
 import pyray as r
 import raylib as rl
 from raylib.colors import *
+from pyglsl import VertexStage, FragmentStage
 import os
 import pathlib
 
@@ -32,17 +33,20 @@ __fshader_extensions = ['.fs.glsl', '.fsh', '.frag']
 def _file_locations(name):
     return ['.', f"data/{name}", name]
 
-def Image(file):
+def Image(file: str):
     return r.load_image(find_file(file, __image_extensions, _file_locations('images')))
 
-def Texture(file):
+def Texture(file: str):
     return r.load_texture(find_file(file, __image_extensions, _file_locations('images')))
 
-def Shader(vertex_file, fragment_file):
+def Shader(vertex_file: str, fragment_file: str):
     return r.load_shader(find_file(vertex_file, __vshader_extensions, _file_locations('shaders')),
                          find_file(fragment_file, __fshader_extensions, _file_locations('shaders')))
 
-def Model(file):
+def CompileShader(vertex: VertexStage, fragment: FragmentStage):
+    return r.load_shader_from_memory(vertex.compile(), fragment.compile())
+
+def Model(file: str):
     return r.load_model(find_file(file, __model_extensions, _file_locations('models')))
 
 def _fix_key(kname):
@@ -54,34 +58,35 @@ def _fix_key(kname):
         kname = "KEY_" + kname
     return kname
 
+class Keys:
+    def __getattr__(self, kname):
+        return getattr(rl, _fix_key(kname))
 
 class Keyboard:
     """
     Handles input from keyboard
     """
     @classmethod
-    def __getattr__(cls, kname):
-        return rl.IsKeyDown(getattr(rl, _fix_key(kname)))
-
+    def _fix_kname(cls, kname):
+        return getattr(rl, _fix_key(kname) if isinstance(kname, str) else kname)
 
     @classmethod
-    def key_down(cls, kname):
+    def __getattr__(cls, kname: str | Keys):
+        return rl.IsKeyDown(getattr(rl, _fix_key(kname) if isinstance(kname, str) else kname))
+
+    @classmethod
+    def key_down(cls, kname: str | Keys):
         """
         Test if key is currently down
         """
-        return rl.IsKeyDown(getattr(rl, _fix_key(kname)))
+        return rl.IsKeyDown(cls._fix_kname(kname))
 
     @classmethod
-    def key_pressed(cls, kname):
+    def key_pressed(cls, kname: str | Keys):
         """
         Test if key was pressed recently
         """
-        return rl.IsKeyPressed(getattr(rl, _fix_key(kname)))
-
-
-class Keys:
-    def __getattr__(self, kname):
-        return getattr(rl, _fix_key(kname))
+        return rl.IsKeyPressed(cls._fix_kname(kname))
     
 class Gamepad:
     """
