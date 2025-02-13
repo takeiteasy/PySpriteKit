@@ -32,7 +32,7 @@ class Actor2D(Actor):
     origin: Vector2 = field(default_factory=lambda: Vector2([0.5, 0.5]))
 
     def _offset(self):
-        return self.position - self.origin * Vector2([self.width, self.height])
+        return self.origin * Vector2([-self.width, -self.height])
 
 class BaseShape:
     draw_func = None
