@@ -405,6 +405,14 @@ class BaseVector(BaseObject):
 
 class BaseVector2(BaseVector):
     _shape = (2,)
+    #: The X value of this Vector.
+    x = NpProxy(0)
+    #: The Y value of this Vector.
+    y = NpProxy(1)
+    #: The X,Y values of this Vector as a numpy.ndarray.
+    xy = NpProxy([0,1])
+    #: The X,Y,Z values of this Vector as a numpy.ndarray.
+    yx = NpProxy([1,0])
 
 class BaseVector3(BaseVector):
     _shape = (3,)

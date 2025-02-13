@@ -1,4 +1,5 @@
 import gamekit as gk
+import pyray as r
 
 @gk.main_scene
 class TestScene(gk.Scene):
@@ -12,10 +13,16 @@ class TestScene(gk.Scene):
     }
     
     def enter(self):
-        pass
+        self.add_child(gk.RectangleActor2D(name="test",
+                                           width=100,
+                                           height=100,
+                                           rotation=45.,
+                                           color=r.Color(255, 0, 0, 255)))
 
     def step(self, delta):
-        pass
-
-    def draw(self):
-        super().draw()
+        if gk.Keyboard.key_pressed("space"):
+            if self.children:
+                self.remove_children("test")
+            else:
+                self.enter()
+        

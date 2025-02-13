@@ -1,5 +1,7 @@
 from typing import Optional
-from .actor import ActorType
+
+class ActorType:
+    pass
 
 class Parent:
     def __init__(self):
@@ -15,7 +17,7 @@ class Parent:
     def get_children(self, name: Optional[str] = ""):
         return [x for x in self.children if x.name == name]
 
-    def rem_children(self, name: Optional[str] = ""):
+    def remove_children(self, name: Optional[str] = ""):
         self.children = [x for x in self.children if x.name != name]
 
     def clear_children(self):

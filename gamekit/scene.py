@@ -13,7 +13,11 @@ class Scene(FiniteStateMachine, Parent):
     def __init__(self, **kwargs):
         Parent.__init__(self)
         FiniteStateMachine.__init__(self, **kwargs)
-        self.projection = r.matrix_identity()
+        self.camera = r.Camera2D()
+        self.camera.target = 0, 0
+        self.camera.offset = r.get_screen_width() / 2, r.get_screen_height() / 2
+        self.camera.zoom = 1.
+        self.clear_color = r.RAYWHITE
     
     def add_child(self, node: ActorType):
         node.scene = self
@@ -35,8 +39,11 @@ class Scene(FiniteStateMachine, Parent):
         pass
 
     def draw(self):
+        r.clear_background(self.clear_color)
+        r.begin_mode_2d(self.camera)
         for child in self.children:
             child.draw()
+        r.end_mode_2d()
 
 def push_scene(scene: Scene):
     global __next_scene
