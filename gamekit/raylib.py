@@ -1,5 +1,5 @@
 import pyray as r
-from raylib import *
+import raylib as rl
 from raylib.colors import *
 import os
 import pathlib
@@ -27,41 +27,14 @@ def find_file(name, extensions, folders):
     raise Exception(f"file {file} does not exist")
 
 def Texture(file):
-    texture = r.load_texture(find_file(file, ['.png', '.jpg', ''], ['.', 'data/images', 'images']))
-    return texture
+    return r.load_texture(find_file(file, ['.png', '.jpg', '.jpeg', '.bmp', '.tga', '.hdr', '.gif', '.psd', '.pic'], ['.', 'data/images', 'images']))
 
-class Vector(list):
-    @property
-    def x(self):
-        return self[0]
+def Shader(vertex_file, fragment_file):
+    return r.load_shader(find_file(vertex_file, ['.vs.glsl', '.vsh', '.vert'], ['.', 'data/shaders', 'shaders']),
+                         find_file(fragment_file, ['.fs.glsl', '.fsh', '.frag'], ['.', 'data/shaders', 'shaders']))
 
-    @x.setter
-    def x(self, value):
-        self[0] = value
-
-    @property
-    def y(self):
-        return self[1]
-
-    @y.setter
-    def y(self, value):
-        self[1] = value
-
-    @property
-    def z(self):
-        return self[2]
-
-    @z.setter
-    def z(self, value):
-        self[2] = value
-
-    @property
-    def w(self):
-        return self[3]
-
-    @w.setter
-    def w(self, value):
-        self[3] = value
+def Model(file):
+    return r.load_model(find_file(file, ['.obj', '.glb', '.gltf', '.iqm', '.vox', '.m3d'], ['.', 'data/models', 'models']))
 
 def _fix_key(kname):
     # return is a reserved word, so alias enter to return
@@ -77,31 +50,29 @@ class Keyboard:
     """
     Handles input from keyboard
     """
-    def __getattr__(self, kname):
-        f = _fix_key(kname)
-        return rl.IsKeyDown(getattr(rl, f))
+    @classmethod
+    def __getattr__(cls, kname):
+        return rl.IsKeyDown(getattr(rl, _fix_key(kname)))
 
 
-    def key_down(self, kname):
+    @classmethod
+    def key_down(cls, kname):
         """
         Test if key is currently down
         """
-        f = _fix_key(kname)
-        return IsKeyDown(getattr(rl, f))
+        return rl.IsKeyDown(getattr(rl, _fix_key(kname)))
 
-    def key_pressed(self, kname):
+    @classmethod
+    def key_pressed(cls, kname):
         """
         Test if key was pressed recently
         """
-        f = _fix_key(kname)
-        return IsKeyPressed(getattr(rl, f))
+        return rl.IsKeyPressed(getattr(rl, _fix_key(kname)))
 
 
 class Keys:
     def __getattr__(self, kname):
-        k = getattr(rl, _fix_key(kname))
-        print(k)
-        return k
+        return getattr(rl, _fix_key(kname))
     
 class Gamepad:
     """
@@ -112,7 +83,7 @@ class Gamepad:
 
     def test(self):
         if r.is_gamepad_available(self.id):
-            print("Detected gamepad", self.id, ffi.string(r.get_gamepad_name(self.id)))
+            print("Detected gamepad", self.id, rl.ffi.string(r.get_gamepad_name(self.id)))
 
     @property
     def up(self):
@@ -148,45 +119,45 @@ class Gamepad:
 
     @property
     def left_stick(self):
-        return Vector([r.get_gamepad_axis_movement(self.id, rl.GAMEPAD_AXIS_LEFT_X),
-                       r.get_gamepad_axis_movement(self.id, rl.GAMEPAD_AXIS_LEFT_Y)])
+        return r.get_gamepad_axis_movement(self.id, rl.GAMEPAD_AXIS_LEFT_X), r.get_gamepad_axis_movement(self.id, rl.GAMEPAD_AXIS_LEFT_Y)
 
     @property
     def right_stick(self):
-        return Vector([r.get_gamepad_axis_movement(self.id, rl.GAMEPAD_AXIS_RIGHT_X),
-                       r.get_gamepad_axis_movement(self.id, rl.GAMEPAD_AXIS_RIGHT_Y)])
+        return r.get_gamepad_axis_movement(self.id, rl.GAMEPAD_AXIS_RIGHT_X), r.get_gamepad_axis_movement(self.id, rl.GAMEPAD_AXIS_RIGHT_Y)
 
 class Mouse:
     """
     Handles input from mouse
     """
-    def get_position_on_ground(self, ground_level):
+    @classmethod
+    def get_position_on_ground(cls, ground_level):
         pos = r.get_mouse_position()
         ray = r.get_mouse_ray(pos, __camera[0])
         rayhit = r.get_collision_ray_ground(ray, ground_level)
-        return Vector([rayhit.position.x, rayhit.position.y, rayhit.position.z])
+        return rayhit.position.x, rayhit.position.y, rayhit.position.z
 
-    @property
-    def ground_position(self):
-        return self.get_position_on_ground(0)
+    @classmethod
+    def ground_position(cls, ground_level):
+        return cls.get_position_on_ground(ground_level)
 
-    @property
-    def left_button(self):
+    @classmethod
+    def left_button(cls):
         return r.is_mouse_button_down(rl.MOUSE_LEFT_BUTTON)
 
-    @property
-    def right_button(self):
+    @classmethod
+    def right_button(cls):
         return r.is_mouse_button_down(rl.MOUSE_RIGHT_BUTTON)
 
-    @property
-    def middle_button(self):
+    @classmethod
+    def middle_button(cls):
         return r.is_mouse_button_down(rl.MOUSE_MIDDLE_BUTTON)
 
-    @property
-    def clicked(self):
+    @classmethod
+    def clicked(cls):
         return r.is_mouse_button_pressed(rl.MOUSE_LEFT_BUTTON)
 
-    def check_collision(self, actor):
+    @classmethod
+    def check_collision(cls, actor):
         if not actor.loaded:
             actor.load_data()
         pos = r.get_mouse_position()

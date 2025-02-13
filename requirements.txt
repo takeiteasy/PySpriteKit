@@ -1,5 +1,6 @@
 attrs==25.1.0
 cffi==1.17.1
+multipledispatch==1.0.0
 numpy==2.2.2
 pycparser==2.22
 pyglsl==0.0.5
