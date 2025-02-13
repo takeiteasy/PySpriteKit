@@ -38,26 +38,6 @@ class BaseShape:
     draw_func = None
     draw_wire_func = None
 
-class BaseLine(BaseShape):
-    draw_func = rl.DrawLine
-    draw_wire_func = rl.DrawLine
-
-class BaseRectangle(BaseShape):
-    draw_func = rl.DrawRectangleRec
-    draw_wire_func = rl.DrawRectangleLinesEx
-
-class BaseCircle(BaseShape):
-    draw_func = rl.DrawCircle
-    draw_wire_func = rl.DrawCircleLines
-
-class BaseTriangle(BaseShape):
-    draw_func = rl.DrawTriangle
-    draw_wire_func = rl.DrawTriangleLines
-
-class BaseEllipse(BaseShape):
-    draw_func = rl.DrawEllipse
-    draw_wire_func = rl.DrawEllipseLines
-
 @dataclass
 class ShapeActor2D(Actor2D):
     color: r.Color = r.Color(255, 255, 255, 255) # replace r.Color with Color
@@ -71,14 +51,18 @@ class ShapeActor2D(Actor2D):
             self.__class__.draw_func(*args, **kwargs)
 
 @dataclass
-class LineActor2D(ShapeActor2D, BaseLine):
+class LineActor2D(ShapeActor2D, BaseShape):
+    draw_func = rl.DrawLine
+    draw_wire_func = rl.DrawLine
     end: Vector2 = field(default_factory=Vector2)
 
     def draw(self):
         self._draw(self.position.x, self.position.y, self.end.x, self.end.y, self.color)
 
 @dataclass
-class RectangleActor2D(ShapeActor2D, BaseRectangle):
+class RectangleActor2D(ShapeActor2D, BaseShape):
+    draw_func = rl.DrawRectangleRec
+    draw_wire_func = rl.DrawRectangleLinesEx
     width: float = 1.
     height: float = 1.
     origin: Vector2 = field(default_factory=lambda: Vector2([0.5, 0.5]))
@@ -92,14 +76,18 @@ class RectangleActor2D(ShapeActor2D, BaseRectangle):
             self._draw(rec, self.color)
 
 @dataclass
-class CircleActor2D(ShapeActor2D, BaseCircle):
+class CircleActor2D(ShapeActor2D, BaseShape):
+    draw_func = rl.DrawCircle
+    draw_wire_func = rl.DrawCircleLines
     radius: float = 1.
 
     def draw(self):
         self._draw(int(self.position.x), int(self.position.y), self.radius, self.color)
 
 @dataclass
-class TriangleActor2D(ShapeActor2D, BaseTriangle):
+class TriangleActor2D(ShapeActor2D, BaseShape):
+    draw_func = rl.DrawTriangle
+    draw_wire_func = rl.DrawTriangleLines
     position2: Vector2 = field(default_factory=Vector2)
     position3: Vector2 = field(default_factory=Vector2)
 
@@ -107,7 +95,9 @@ class TriangleActor2D(ShapeActor2D, BaseTriangle):
         self._draw([self.position.x, self.position.y], [self.position2.x, self.position2.y], [self.position3.x, self.position3.y], self.color)
 
 @dataclass
-class EllipseActor2D(ShapeActor2D, BaseEllipse):
+class EllipseActor2D(ShapeActor2D, BaseShape):
+    draw_func = rl.DrawEllipse
+    draw_wire_func = rl.DrawEllipseLines
     width: float = 1.
     height: float = 1.
 
@@ -121,6 +111,8 @@ class SpriteActor2D(Actor2D):
     origin: Vector2 = field(default_factory=Vector2)
 
     def draw(self):
+        if not self.texture:
+            return
         if self.source.width == 0 or self.source.height == 0:
             self.source = r.Rectangle(0, 0, self.texture.width, self.texture.height)
         r.draw_texture_pro(self.texture, self.source, self.position.x, self.position.y, self.origin.x, self.origin.y, self.rotation, self.scale, self.color)
