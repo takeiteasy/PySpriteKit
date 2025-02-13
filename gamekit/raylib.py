@@ -4,7 +4,6 @@ from raylib.colors import *
 from pyglsl import VertexStage, FragmentStage
 import os
 import pathlib
-from typing import TypeVar, Generic
 
 __PATH = pathlib.Path(__file__).parent
 __camera = None
@@ -179,22 +178,8 @@ class Mouse:
         ray = r.get_mouse_ray(pos, __camera[0])
         return r.check_collision_ray_box(ray, actor.calc_bounding_box())
 
-ColorT = TypeVar('ColorT', bound=r.Color)
+def Color(_r: int | float, g: int | float, b: int | float, a: int | float = 255):
+    return r.Color(*[x if isinstance(x, int) else int(x * 255.) for x in [_r, g, b, a]])
 
-def Color(r: Generic[ColorT], g: Generic[ColorT], b: Generic[ColorT], a: Generic[ColorT]):
-    if ColorT == int:
-        return r.Color(r, g, b, a)
-    elif ColorT == float:
-        return r.Color(int(r * 255.), int(g * 255.), int(b * 255.), int(a * 255.))
-    else:
-        raise TypeError("Color components must be numbers (int or float)")
-
-RectangleT = TypeVar('RectangleT', bound=r.Rectangle)
-
-def Rectangle(x: Generic[RectangleT], y: Generic[RectangleT], width: Generic[RectangleT], height: Generic[RectangleT]):
-    if RectangleT == int:
-        return r.Rectangle(x, y, width, height)
-    elif RectangleT == float:
-        return r.Rectangle(int(x), int(y), int(width), int(height))
-    else:
-        raise TypeError("Rectangle components must be numbers (int or float)")
+def Rectangle(x: int | float, y: int | float, width: int | float, height: int | float):
+    return r.Rectangle(int(x), int(y), int(width), int(height))

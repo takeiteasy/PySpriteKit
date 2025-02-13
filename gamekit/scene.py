@@ -8,7 +8,7 @@ __next_scene = None
 __drop_scene = None
 
 class Scene(FiniteStateMachine, Parent):
-    window_attrs: dict = {}
+    config: dict = {}
 
     def __init__(self, **kwargs):
         Parent.__init__(self)
@@ -70,14 +70,14 @@ def main_scene(cls):
     global __scene__, __drop_scene, __next_scene
     if __scene__:
         raise RuntimeError("There can only be one @main_scene")
-    r.init_window(cls.window_attrs['width'] if "width" in cls.window_attrs else 800,
-                  cls.window_attrs['height'] if "height" in cls.window_attrs else 600,
-                  cls.window_attrs['title'] if "title" in cls.window_attrs else "GameKit")
-    r.set_config_flags(cls.window_attrs['flags'] if "flags" in cls.window_attrs else r.ConfigFlags.FLAG_WINDOW_RESIZABLE)
-    if "fps" in cls.window_attrs:
-        r.set_target_fps(cls.window_attrs['fps'])
-    if "exit_key" in cls.window_attrs:
-        r.set_exit_key(cls.window_attrs['exit_key'])
+    r.init_window(cls.config['width'] if "width" in cls.config else 800,
+                  cls.config['height'] if "height" in cls.config else 600,
+                  cls.config['title'] if "title" in cls.config else "GameKit")
+    r.set_config_flags(cls.config['flags'] if "flags" in cls.config else r.ConfigFlags.FLAG_WINDOW_RESIZABLE)
+    if "fps" in cls.config:
+        r.set_target_fps(cls.config['fps'])
+    if "exit_key" in cls.config:
+        r.set_exit_key(cls.config['exit_key'])
     scn = cls()
     __scene__.append(scn)
     scn.enter()
