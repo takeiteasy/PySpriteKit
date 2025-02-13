@@ -30,12 +30,45 @@ __model_extensions = ['.obj', '.glb', '.gltf', '.iqm', '.vox', '.m3d']
 __vshader_extensions = ['.vs.glsl', '.vsh', '.vert']
 __fshader_extensions = ['.fs.glsl', '.fsh', '.frag']
 
+__cache = {}
+
+def cache_result(func):
+    def wrapper(*args, **kwargs):
+        key = args[0]  # Get the file path argument
+        if key in __cache:
+            return __cache[key]
+        result = func(*args, **kwargs)
+        __cache[key] = result
+        return result
+    return wrapper
+
+def _unload_asset(key: str):
+    k = __cache[k]
+    if isinstance(k, r.Model):
+        r.unload_model(k)
+    elif isinstance(k, r.Texture):
+        r.unload_texture(k)
+    else:
+        try:
+            del k
+        except:
+            pass
+    __cache.pop(key)
+
+def unload_cache(key: str = None):
+    if key:
+        _unload_asset(key)
+    else:
+        for key in list(__cache.keys()):
+            _unload_asset(key)
+
 def _file_locations(name):
     return ['.', f"data/{name}", name]
 
 def Image(file: str):
     return r.load_image(find_file(file, __image_extensions, _file_locations('images')))
 
+@cache_result
 def Texture(file: str):
     return r.load_texture(find_file(file, __image_extensions, _file_locations('images')))
 
@@ -43,9 +76,11 @@ def Shader(vertex_file: str, fragment_file: str):
     return r.load_shader(find_file(vertex_file, __vshader_extensions, _file_locations('shaders')),
                          find_file(fragment_file, __fshader_extensions, _file_locations('shaders')))
 
-def CompileShader(vertex: VertexStage, fragment: FragmentStage):
-    return r.load_shader_from_memory(vertex.compile(), fragment.compile())
+def CompileShader(vertex: str | VertexStage, fragment: str | FragmentStage):
+    return r.load_shader_from_memory(vertex.compile() if isinstance(vertex, VertexStage) else vertex,
+                                     fragment.compile() if isinstance(fragment, FragmentStage) else fragment)
 
+@cache_result
 def Model(file: str):
     return r.load_model(find_file(file, __model_extensions, _file_locations('models')))
 

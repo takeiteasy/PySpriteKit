@@ -18,6 +18,7 @@ class Scene(FiniteStateMachine, Parent):
         self.camera.offset = r.get_screen_width() / 2, r.get_screen_height() / 2
         self.camera.zoom = 1.
         self.clear_color = r.RAYWHITE
+        self.assets = {} # TODO: Store and restore assets to __cache in raylib.py
     
     def add_child(self, node: ActorType):
         node.scene = self

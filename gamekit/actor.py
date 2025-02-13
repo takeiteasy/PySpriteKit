@@ -65,7 +65,6 @@ class RectangleActor2D(ShapeActor2D, BaseShape):
     draw_wire_func = rl.DrawRectangleLinesEx
     width: float = 1.
     height: float = 1.
-    origin: Vector2 = field(default_factory=lambda: Vector2([0.5, 0.5]))
 
     def draw(self):
         pos = self._offset()
