@@ -4,6 +4,10 @@ def support(shape1, shape2, direction):
     """Finds the support point in the Minkowski difference."""
     return shape1.get_farthest_point_in_direction(direction) - shape2.get_farthest_point_in_direction(-direction)
 
+def cross_2d(a, b):
+    """Compute the 2D cross product which returns a scalar."""
+    return np.cross(np.append(a, 0), np.append(b, 0))[2]
+
 def closest_point_to_origin(simplex):
     """Finds the closest point on the simplex to the origin."""
     if len(simplex) == 1:
@@ -25,15 +29,14 @@ def closest_point_to_origin(simplex):
         ac = c - a
         ao = -a
         
-        # For 2D vectors, we need to handle cross products carefully
-        # np.cross returns a scalar for 2D vectors
-        abc = np.cross(ab, ac)  # Normal direction (scalar in 2D)
+        # Use our custom 2D cross product function
+        abc = cross_2d(ab, ac)  # Normal direction (scalar)
         
         # Check Voronoi regions using 2D cross products
-        if abc * np.cross(ac, ao) > 0:
+        if abc * cross_2d(ac, ao) > 0:
             # Origin is closest to AC edge
             return closest_point_to_origin([a, c])
-        elif abc * np.cross(ab, ao) < 0:
+        elif abc * cross_2d(ab, ao) < 0:
             # Origin is closest to AB edge
             return closest_point_to_origin([a, b])
         else:
@@ -52,14 +55,19 @@ def contains_origin(simplex):
         a, b, c = simplex
         ab = b - a
         ac = c - a
-        # For 2D vectors, we only need to check if the origin is on the correct side
-        # of the triangle. We can do this by checking if the z-component of the cross
-        # product has the same sign as the z-component of the cross product with ao
-        abc = np.cross(ab, ac)  # This is a scalar in 2D
-        return abc * np.cross(ab, -a) > 0 and \
-               abc * np.cross(ac, -a) > 0 and \
-               abc * np.cross(b - c, -c) > 0
+        # Use our custom 2D cross product function
+        abc = cross_2d(ab, ac)
+        return abc * cross_2d(ab, -a) > 0 and \
+               abc * cross_2d(ac, -a) > 0 and \
+               abc * cross_2d(b - c, -c) > 0
     return False
+
+def normalize(v):
+    """Safely normalize a vector."""
+    norm = np.linalg.norm(v)
+    if norm < 1e-10:  # Avoid division by zero
+        return v
+    return v / norm
 
 def gjk(shape1, shape2):
     """GJK algorithm to detect intersection between two convex shapes."""
@@ -96,8 +104,7 @@ class Circle(ConvexShape):
         self.radius = radius
     
     def get_farthest_point_in_direction(self, direction):
-        direction_norm = direction / np.linalg.norm(direction)
-        return self.center + self.radius * direction_norm
+        return self.center + self.radius * normalize(direction)
 
 class Rectangle(ConvexShape):
     def __init__(self, center, width, height, rotation=0, scale=1.):
