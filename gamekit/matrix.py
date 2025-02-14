@@ -281,7 +281,7 @@ class MatrixCore:
         """
         return np.linalg.inv(self)
 
-def m324(m33, dtype=None):
+def m324(m33: BaseMatrix3, dtype=None) -> np.ndarray:
     dtype = dtype or m33.dtype
     m = np.identity(4, dtype=dtype)
     m[0:3, 0:3] = m33
@@ -851,9 +851,169 @@ class Matrix4(BaseObject, MatrixCore):
         """
         scale, rotate, translate = matrix44_decompose(self)
         return Vector3(scale), Quaternion(rotate), Vector3(translate)
-    
+
 class Matrix(Matrix4):
     pass
 
-class Matrix3(BaseObject):
-    pass
+@parameters_as_numpy_arrays('vec')
+def matrix33_apply_to_vector(mat, vec):
+    """Apply a matrix to a vector.
+
+    The matrix's rotation are applied to the vector.
+    Supports multiple matrices and vectors.
+
+    :param numpy.array mat: The rotation / translation matrix.
+        Can be a list of matrices.
+    :param numpy.array vec: The vector to modify.
+        Can be a numpy.array of vectors. ie. numpy.array([[x1,...], [x2,...], ...])
+    :rtype: numpy.array
+    :return: The vectors rotated by the specified matrix.
+    """
+    size = vec.shape[len(vec.shape) - 1]
+    if size == 3:
+        return np.dot(vec, mat)
+    else:
+        raise ValueError("Vector size unsupported")
+
+def matrix33_create_from_matrix44(mat, dtype=None):
+    """Creates a Matrix33 from a Matrix44.
+
+    :rtype: numpy.array
+    :return: A matrix with shape (3,3) with the input matrix rotation.
+    """
+    mat = np.asarray(mat)
+    return np.array(mat[0:3,0:3], dtype=dtype)
+
+class Matrix3(BaseObject, MatrixCore):
+    ########################
+    # Creation
+    @classmethod
+    def from_matrix44(cls, matrix, dtype=None):
+        """Creates a Matrix33 from a Matrix44.
+
+        The Matrix44 translation will be lost.
+        """
+        return cls(matrix33_create_from_matrix44(matrix, dtype))
+
+    def __new__(cls, value=None, dtype=None):
+        if value is not None:
+            obj = value
+            if not isinstance(value, np.ndarray):
+                obj = np.array(value, dtype=dtype)
+
+            # matrix44
+            if obj.shape == (4,4) or isinstance(obj, Matrix4):
+                obj = matrix33_create_from_matrix44(obj, dtype=dtype)
+            # quaternion
+            elif obj.shape == (4,) or isinstance(obj, Quaternion):
+                obj = matrix33_create_from_quaternion(obj, dtype=dtype)
+        else:
+            obj = np.zeros(cls._shape, dtype=dtype)
+        obj = obj.view(cls)
+        return super(Matrix3, cls).__new__(cls, obj)
+
+    ########################
+    # Basic Operators
+
+    @dispatch(BaseObject)
+    def __add__(self, other):
+        self._unsupported_type('add', other)
+
+    @dispatch(BaseObject)
+    def __sub__(self, other):
+        self._unsupported_type('subtract', other)
+
+    @dispatch(BaseObject)
+    def __mul__(self, other):
+        self._unsupported_type('multiply', other)
+
+    @dispatch(BaseObject)
+    def __truediv__(self, other):
+        self._unsupported_type('divide', other)
+
+    @dispatch(BaseObject)
+    def __div__(self, other):
+        self._unsupported_type('divide', other)
+
+    def __invert__(self):
+        return self.inverse
+
+    ########################
+    # Matrices
+    @dispatch((BaseMatrix, np.ndarray, list))
+    def __add__(self, other):
+        return Matrix3(super(Matrix3, self).__add__(Matrix3(other)))
+
+    @dispatch((BaseMatrix, np.ndarray, list))
+    def __sub__(self, other):
+        return Matrix3(super(Matrix3, self).__sub__(Matrix3(other)))
+
+    @dispatch((BaseMatrix, np.ndarray, list))
+    def __mul__(self, other):
+        return Matrix3(np.dot(other, self))
+
+    @dispatch((BaseMatrix, np.ndarray, list))
+    def __ne__(self, other):
+        return bool(np.any(super(Matrix3, self).__ne__(other)))
+
+    @dispatch((BaseMatrix, np.ndarray, list))
+    def __eq__(self, other):
+        return bool(np.all(super(Matrix3, self).__eq__(other)))
+
+    ########################
+    # Quaternions
+    @dispatch(BaseQuaternion)
+    def __mul__(self, other):
+        m = other.matrix33
+        return self * m
+
+    ########################
+    # Vectors
+    @dispatch(BaseVector)
+    def __mul__(self, other):
+        return type(other)(matrix33_apply_to_vector(self, other))
+
+    ########################
+    # Number
+    @dispatch((Number, np.number))
+    def __add__(self, other):
+        return Matrix3(super(Matrix3, self).__add__(other))
+
+    @dispatch((Number, np.number))
+    def __sub__(self, other):
+        return Matrix3(super(Matrix3, self).__sub__(other))
+
+    @dispatch((Number, np.number))
+    def __mul__(self, other):
+        return Matrix3(super(Matrix3, self).__mul__(other))
+
+    @dispatch((Number, np.number))
+    def __truediv__(self, other):
+        return Matrix3(super(Matrix3, self).__truediv__(other))
+
+    @dispatch((Number, np.number))
+    def __div__(self, other):
+        return Matrix3(super(Matrix3, self).__div__(other))
+
+    ########################
+    # Methods and Properties
+    @property
+    def matrix33(self):
+        """Returns the Matrix33.
+
+        This can be handy if you're not sure what type of Matrix class you have
+        but require a Matrix33.
+        """
+        return self
+
+    @property
+    def matrix44(self):
+        """Returns a Matrix44 representing this matrix.
+        """
+        return Matrix4(self)
+
+    @property
+    def quaternion(self):
+        """Returns a Quaternion representing this matrix.
+        """
+        return Quaternion(self)

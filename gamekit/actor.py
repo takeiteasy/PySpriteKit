@@ -184,7 +184,7 @@ class LabelActor2D(Actor2D):
         if not hasattr(self, '_height'):
             self._height = size.y
         return size
-
+    
     @property
     def width(self):
         if not hasattr(self, '_width'):
