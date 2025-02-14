@@ -12,6 +12,7 @@ __image_extensions = ['.png', '.bmp', '.tga', '.jpg', '.jpeg', '.gif', '.qoi', '
 __model_extensions = ['.obj', '.glb', '.gltf', '.iqm', '.vox', '.m3d']
 __vshader_extensions = ['.vs.glsl', '.vsh', '.vert']
 __fshader_extensions = ['.fs.glsl', '.fsh', '.frag']
+__sound_extensions = ['.wav', '.mp3', '.ogg', '.flac', '.xm', '.mod', '.qoa']
 
 __cache = {}
 
@@ -27,7 +28,8 @@ def _gen_file_paths(name, extensions, folders):
 def find_file(name, extensions, folders):
     _, ext = os.path.splitext(name)
     if ext and ext in extensions:
-        return name
+        if os.path.isfile(name):
+            return name
     for file in _gen_file_paths(name, extensions, folders):
         print("trying ",file)
         if os.path.isfile(file):
@@ -68,11 +70,11 @@ def _file_locations(name):
     return ['.', f"data/{name}", name]
 
 def Image(file: str):
-    return r.load_image(find_file(file, __image_extensions, _file_locations('images')))
+    return r.load_image(find_file(file, __image_extensions, _file_locations('textures')))
 
 @cache_result
 def Texture(file: str):
-    return r.load_texture(find_file(file, __image_extensions, _file_locations('images')))
+    return r.load_texture(find_file(file, __image_extensions, _file_locations('textures')))
 
 def Shader(vertex_file: str, fragment_file: str):
     return r.load_shader(find_file(vertex_file, __vshader_extensions, _file_locations('shaders')),
@@ -85,6 +87,20 @@ def CompileShader(vertex: str | VertexStage, fragment: str | FragmentStage):
 @cache_result
 def Model(file: str):
     return r.load_model(find_file(file, __model_extensions, _file_locations('models')))
+
+def Wave(file: str):
+    return r.load_wave(find_file(file, __sound_extensions, _file_locations('audio')))
+
+def Sound(file):
+    if isinstance(file, r.Wave):
+        return r.load_sound_from_wave(file)
+    else:
+        def _load(file):
+            return r.load_sound(find_file(file, __sound_extensions, _file_locations('audio')))
+        return _load(file)
+
+def Music(file: str):
+    return r.load_music_stream(find_file(file, __sound_extensions, _file_locations('audio')))
 
 def _fix_key(kname):
     # return is a reserved word, so alias enter to return

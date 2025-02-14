@@ -23,7 +23,7 @@ class Scene(FiniteStateMachine, ActorParent):
     @override
     def add_child(self, node: ActorType):
         node.scene = self
-        self._children.append(node)
+        self._add_child(node)
 
     def enter(self):
         pass
@@ -38,14 +38,27 @@ class Scene(FiniteStateMachine, ActorParent):
         pass
 
     def step(self, delta):
+        for child in self.all_children():
+            child.step(delta)
+
+    def prestep(self, delta):
+        pass
+
+    def poststep(self, delta):
         pass
 
     def draw(self):
         r.clear_background(self.clear_color)
         r.begin_mode_2d(self.camera)
-        for child in self._children:
+        for child in self.all_children():
             child.draw()
         r.end_mode_2d()
+
+    def predraw(self):
+        pass
+
+    def postdraw(self):
+        pass
 
 def push_scene(scene: Scene):
     global __next_scene
@@ -76,6 +89,7 @@ def main_scene(cls):
                   cls.config['height'] if "height" in cls.config else 600,
                   cls.config['title'] if "title" in cls.config else "GameKit")
     r.set_config_flags(cls.config['flags'] if "flags" in cls.config else r.ConfigFlags.FLAG_WINDOW_RESIZABLE)
+    r.init_audio_device()
     if "fps" in cls.config:
         r.set_target_fps(cls.config['fps'])
     if "exit_key" in cls.config:
@@ -84,9 +98,14 @@ def main_scene(cls):
     __scene__.append(scn)
     scn.enter()
     while not r.window_should_close() and __scene__:
-        scn.step(r.get_frame_time())
+        dt = r.get_frame_time()
+        scn.prestep(dt)
+        scn.step(dt)
+        scn.poststep(dt)
         r.begin_drawing()
+        scn.predraw()
         scn.draw()
+        scn.postdraw()
         r.end_drawing()
         if __drop_scene:
             if isinstance(__drop_scene, list):

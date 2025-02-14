@@ -9,47 +9,55 @@ class ActorType:
     pass
 
 class ActorParent:
-    def __init__(self):
-        self._children = []
+    def _add_child(self, node: ActorType):
+        if not hasattr(self, '_children'):
+            self._children = []
+        self._children.append(node)
 
     def add_child(self, node: ActorType):
-        self._children.append(node)
+        self._add_child(node)
 
     def add_children(self, nodes: ActorType | list[ActorType]):
         for node in nodes if isinstance(nodes, list) else [nodes]:
             self.add_child(node)
 
     def find_children(self, name: Optional[str] = ""):
+        if not hasattr(self, '_children'):
+            return []
         return [x for x in self._children if x.name == name]
+    
+    def all_children(self):
+        return self._children if hasattr(self, '_children') else []
     
     def children(self, name: Optional[str] = ""):
         for child in self.find_children(name):
             yield child
 
     def remove_children(self, name: Optional[str] = ""):
-        self._children = [x for x in self._children if x.name != name]
+        self._children = [x for x in (self._children if hasattr(self, '_children') else []) if x.name != name]
 
     def remove_all_children(self):
         self._children = []
 
 @dataclass
-class Actor(ActorParent):
+class Actor(ActorType, ActorParent):
     name: str = ""
-    
+
     def __str__(self):
         return f"(Node({self.__class__.__name__}) {" ".join([f"{key}:{getattr(self, key)}" for key in list(vars(self).keys())])})"
     
     @override
     def add_child(self, node: ActorType):
         node.parent = self
-        self._children.append(node)
+        self._add_child(node)
 
-    def draw(self, indent: Optional[int] = 0):
-        if indent:
-            print(" " * (indent * 4) + "⤷ ", end="")
-        print(str(self))
-        for child in self.children:
-            child.draw(indent=indent+1 )
+    def step(self, delta: float):
+        for child in self.all_children():
+            child.step(delta)
+
+    def draw(self):
+        for child in self.all_children():
+            child.draw()
 
 @dataclass
 class Actor2D(Actor):
@@ -204,23 +212,147 @@ class LabelActor2D(Actor2D):
             self.font = r.get_font_default()
         r.draw_text_pro(self.font, self.text.encode('utf-8'), [0,0], [*-self._offset()], self.rotation, self.font_size, self.spacing, self.color)
 
-class Line2D(LineActor2D):
+class Line2DNode(LineActor2D):
     pass
 
-class Rectangle(RectangleActor2D):
+class RectangleNode(RectangleActor2D):
     pass
 
-class Circle(CircleActor2D):
+class CircleNode(CircleActor2D):
     pass
 
-class Triangle(TriangleActor2D):
+class TriangleNode(TriangleActor2D):
     pass
 
-class Ellipse(EllipseActor2D):
+class EllipseNode(EllipseActor2D):
     pass
 
-class Sprite(SpriteActor2D):
+class SpriteNode(SpriteActor2D):
     pass
 
-class Label(LabelActor2D):
+class LabelNode(LabelActor2D):
+    pass
+
+class AudioActor(Actor):
+    volume: float = 1.
+    pitch: float = 1.
+    pan: float = .5
+    play_func = None
+    stop_func = None
+    pause_func = None
+    resume_func = None
+    set_volume_func = None
+    set_pitch_func = None
+    set_pan_func = None
+    is_playing_func = None
+
+    @property
+    def audio(self):
+        return None
+
+    def play(self):
+        if self.audio:
+            self.__class__.play_func(self.audio)
+
+    def stop(self):
+        if self.audio:
+            self.__class__.stop_func(self.audio)
+
+    def pause(self):
+        if self.audio:
+            self.__class__.pause_func(self.audio)
+
+    def resume(self):
+        if self.audio:
+            self.__class__.resume_func(self.audio)
+
+    def set_volume(self, volume: float):
+        if self.audio:
+            self.__class__.set_volume_func(self.audio, max(0., min(volume, 1.)))
+
+    def set_pitch(self, pitch: float):
+        if self.audio:
+            self.__class__.set_pitch_func(self.audio, max(0., min(pitch, 1.)))
+
+    def set_pan(self, pan: float):
+        if self.audio:
+            self.__class__.set_pan_func(self.audio, max(0., min(pan, 1.)))
+    
+    @property
+    def playing(self):
+        if not self.audio:
+            return False
+        return self.__class__.is_playing_func(self.audio)
+    
+    @playing.setter
+    def playing(self, value: bool):
+        if self.audio:
+            if value:
+                self.play()
+            else:
+                self.pause()
+
+@dataclass
+class SoundActor(AudioActor):
+    sound: r.Sound = None
+    play_func = r.play_sound
+    stop_func = r.stop_sound
+    pause_func = r.pause_sound
+    resume_func = r.resume_sound
+    set_volume_func = r.set_sound_volume
+    set_pitch_func = r.set_sound_pitch
+    set_pan_func = r.set_sound_pan
+    is_playing_func = r.is_sound_playing
+
+    @property
+    def audio(self):
+        return self.sound
+
+@dataclass
+class MusicActor(AudioActor):
+    music: r.Music = None
+    loop: bool = False
+    autostart: bool = False
+    play_func = r.play_music_stream
+    stop_func = r.stop_music_stream
+    pause_func = r.pause_music_stream
+    resume_func = r.resume_music_stream
+    set_volume_func = r.set_music_volume
+    set_pitch_func = r.set_music_pitch
+    set_pan_func = r.set_music_pan
+    is_playing_func = r.is_music_stream_playing
+
+    @property
+    def audio(self):
+        return self.music
+
+    def __init__(self, **kwargs):
+        hax = ["music", "loop", "autostart"]
+        a = {a: kwargs[a] for a in kwargs if not a in hax}
+        for k in hax:
+            if k in kwargs:
+                self.__dict__[k] = kwargs[k]
+        super().__init__(**a)
+        if self.autostart:
+            self.play()
+
+    def seek(self, position: float):
+        r.seek_music_stream(self.audio, position)
+    
+    @property
+    def length(self):
+        return r.get_music_time_length(self.audio)
+    
+    def step(self, _: float):
+        if not self.playing:
+            return
+        r.update_music_stream(self.audio)
+        if not self.playing:
+            self.position = 0
+            self.play()
+
+class MusicNode(MusicActor):
+    pass
+
+class SoundNode(SoundActor):
     pass

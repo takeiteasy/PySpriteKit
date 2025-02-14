@@ -14,29 +14,30 @@ class TestScene(gk.Scene):
     
     @override
     def enter(self):
-        self.add_child(gk.Rectangle(name="test",
-                                    width=100,
-                                    height=100,
-                                    color=gk.Color(1., 0, 0)))
-        self.add_child(gk.Circle(name="test",
-                                 position=gk.Vector2([100, 100]),
-                                 radius=100,
-                                 color=gk.Color(0, 1., 0)))
-        self.add_child(gk.Triangle(name="test",
-                                   position2=gk.Vector2([100, 200]),
-                                   position3=gk.Vector2([200, 100]),
-                                   color=gk.Color(0, 0, 1.)))
-        self.add_child(gk.Sprite(name="test",
-                                 texture=gk.Texture(f"assets/textures/LA"),
-                                 origin=gk.Vector2([1., 1.]),
-                                 scale=gk.Vector2([0.5, 0.5])))
-        self.add_child(gk.Label(name="tset",
-                                text="Hello, World!",
-                                font_size=24,
-                                color=gk.Color(1., 0., 1.)))
+        self.add_child(gk.RectangleNode(name="test",
+                                        width=100,
+                                        height=100,
+                                        color=gk.Color(1., 0, 0)))
+        self.add_child(gk.CircleNode(name="test",
+                                     position=gk.Vector2([100, 100]),
+                                     radius=100,
+                                     color=gk.Color(0, 1., 0)))
+        self.add_child(gk.TriangleNode(name="test",
+                                       position2=gk.Vector2([100, 200]),
+                                       position3=gk.Vector2([200, 100]),
+                                       color=gk.Color(0, 0, 1.)))
+        self.add_child(gk.SpriteNode(name="test",
+                                     texture=gk.Texture(f"assets/textures/LA.png"),
+                                     origin=gk.Vector2([1., 1.]),
+                                     scale=gk.Vector2([0.5, 0.5])))
+        self.add_child(gk.LabelNode(text="Hello, World!",
+                                    font_size=24,
+                                    color=gk.Color(1., 0., 1.)))
+        self.add_child(gk.MusicNode(music=gk.Music(f"assets/audio/country.mp3"),
+                                    autostart=True))
 
     @override
-    def step(self, delta):
+    def prestep(self, delta):
         if gk.Keyboard.key_pressed("space"):
             if self.find_children("test"):
                 self.remove_children("test")
