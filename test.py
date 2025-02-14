@@ -1,4 +1,5 @@
 import gamekit as gk
+from typing import override
 
 @gk.main_scene
 class TestScene(gk.Scene):
@@ -11,6 +12,7 @@ class TestScene(gk.Scene):
         "fps": 60
     }
     
+    @override
     def enter(self):
         self.add_child(gk.Rectangle(name="test",
                                     width=100,
@@ -29,6 +31,7 @@ class TestScene(gk.Scene):
                                  origin=gk.Vector2([1., 1.]),
                                  scale=gk.Vector2([0.5, 0.5])))
 
+    @override
     def step(self, delta):
         if gk.Keyboard.key_pressed("space"):
             if self.children:
@@ -36,3 +39,5 @@ class TestScene(gk.Scene):
             else:
                 self.enter()
         
+        for child in self.children("test"):
+            child.position.x += 100 * delta

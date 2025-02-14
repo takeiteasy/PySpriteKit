@@ -1,17 +1,17 @@
-from .actor import ActorType
-from .parent import Parent
+from .actor import ActorType, ActorParent
 from .fsm import FiniteStateMachine
 import pyray as r
+from typing import override
 
 __scene__ = []
 __next_scene = None
 __drop_scene = None
 
-class Scene(FiniteStateMachine, Parent):
+class Scene(FiniteStateMachine, ActorParent):
     config: dict = {}
 
     def __init__(self, **kwargs):
-        Parent.__init__(self)
+        ActorParent.__init__(self)
         FiniteStateMachine.__init__(self, **kwargs)
         self.camera = r.Camera2D()
         self.camera.target = 0, 0
@@ -20,9 +20,10 @@ class Scene(FiniteStateMachine, Parent):
         self.clear_color = r.RAYWHITE
         self.assets = {} # TODO: Store and restore assets to __cache in raylib.py
     
+    @override
     def add_child(self, node: ActorType):
         node.scene = self
-        self.children.append(node)
+        self._children.append(node)
 
     def enter(self):
         pass
@@ -42,7 +43,7 @@ class Scene(FiniteStateMachine, Parent):
     def draw(self):
         r.clear_background(self.clear_color)
         r.begin_mode_2d(self.camera)
-        for child in self.children:
+        for child in self._children:
             child.draw()
         r.end_mode_2d()
 

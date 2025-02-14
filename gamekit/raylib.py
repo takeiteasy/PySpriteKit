@@ -1,6 +1,5 @@
 import pyray as r
 import raylib as rl
-from raylib.colors import *
 from pyglsl import VertexStage, FragmentStage
 import os
 import pathlib
@@ -8,6 +7,13 @@ import pathlib
 __PATH = pathlib.Path(__file__).parent
 __camera = None
 __data_dir = ""
+
+__image_extensions = ['.png', '.bmp', '.tga', '.jpg', '.jpeg', '.gif', '.qoi', '.psd', '.dds', '.hdr', '.ktx', '.astc', '.pkm', '.pvr']
+__model_extensions = ['.obj', '.glb', '.gltf', '.iqm', '.vox', '.m3d']
+__vshader_extensions = ['.vs.glsl', '.vsh', '.vert']
+__fshader_extensions = ['.fs.glsl', '.fsh', '.frag']
+
+__cache = {}
 
 def _gen_file_paths(name, extensions, folders):
     paths = []
@@ -17,20 +23,16 @@ def _gen_file_paths(name, extensions, folders):
             paths.append(__data_dir + os.path.sep + folder + os.path.sep + name + ext)
             paths.append(str(__PATH / folder / name) + ext)
     return paths
-
+    
 def find_file(name, extensions, folders):
+    _, ext = os.path.splitext(name)
+    if ext and ext in extensions:
+        return name
     for file in _gen_file_paths(name, extensions, folders):
         print("trying ",file)
         if os.path.isfile(file):
             return file
     raise Exception(f"file {file} does not exist")
-
-__image_extensions = ['.png', '.bmp', '.tga', '.jpg', '.jpeg', '.gif', '.qoi', '.psd', '.dds', '.hdr', '.ktx', '.astc', '.pkm', '.pvr']
-__model_extensions = ['.obj', '.glb', '.gltf', '.iqm', '.vox', '.m3d']
-__vshader_extensions = ['.vs.glsl', '.vsh', '.vert']
-__fshader_extensions = ['.fs.glsl', '.fsh', '.frag']
-
-__cache = {}
 
 def cache_result(func):
     def wrapper(*args, **kwargs):

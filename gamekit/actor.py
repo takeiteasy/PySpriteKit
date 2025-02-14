@@ -1,21 +1,48 @@
 from .vector import Vector2
-from .parent import Parent, ActorType
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, override
 from raylib.colors import *
 import raylib as rl
 import pyray as r
 
+class ActorType:
+    pass
+
+class ActorParent:
+    def __init__(self):
+        self._children = []
+
+    def add_child(self, node: ActorType):
+        self._children.append(node)
+
+    def add_children(self, nodes: ActorType | list[ActorType]):
+        for node in nodes if isinstance(nodes, list) else [nodes]:
+            self.add_child(node)
+
+    def find_children(self, name: Optional[str] = ""):
+        return [x for x in self._children if x.name == name]
+    
+    def children(self, name: Optional[str] = ""):
+        for child in self.find_children(name):
+            yield child
+
+    def remove_children(self, name: Optional[str] = ""):
+        self._children = [x for x in self._children if x.name != name]
+
+    def remove_all_children(self):
+        self._children = []
+
 @dataclass
-class Actor(Parent):
+class Actor(ActorParent):
     name: str = ""
     
     def __str__(self):
         return f"(Node({self.__class__.__name__}) {" ".join([f"{key}:{getattr(self, key)}" for key in list(vars(self).keys())])})"
     
+    @override
     def add_child(self, node: ActorType):
         node.parent = self
-        self.children.append(node)
+        self._children.append(node)
 
     def draw(self, indent: Optional[int] = 0):
         if indent:
@@ -33,7 +60,7 @@ class Actor2D(Actor):
     color: r.Color = RAYWHITE
 
     def _offset(self):
-        return self.origin * Vector2([-self.width, -self.height])
+        return self.position + self.origin * Vector2([-self.width, -self.height])
 
 class BaseShape:
     draw_func = None
@@ -56,6 +83,7 @@ class LineActor2D(ShapeActor2D, BaseShape):
     draw_wire_func = rl.DrawLine
     end: Vector2 = field(default_factory=Vector2)
 
+    @override
     def draw(self):
         self._draw(self.position.x, self.position.y, self.end.x, self.end.y, self.color)
 
@@ -66,6 +94,7 @@ class RectangleActor2D(ShapeActor2D, BaseShape):
     width: float = 1.
     height: float = 1.
 
+    @override
     def draw(self):
         pos = self._offset()
         rec = r.Rectangle(pos.x, pos.y, self.width, self.height)
@@ -80,6 +109,7 @@ class CircleActor2D(ShapeActor2D, BaseShape):
     draw_wire_func = rl.DrawCircleLines
     radius: float = 1.
 
+    @override
     def draw(self):
         self._draw(int(self.position.x), int(self.position.y), self.radius, self.color)
 
@@ -90,8 +120,15 @@ class TriangleActor2D(ShapeActor2D, BaseShape):
     position2: Vector2 = field(default_factory=Vector2)
     position3: Vector2 = field(default_factory=Vector2)
 
+    @override
     def draw(self):
-        self._draw([self.position.x, self.position.y], [self.position2.x, self.position2.y], [self.position3.x, self.position3.y], self.color)
+        tri = self.position, self.position2, self.position3
+        stri = sorted(tri, key=lambda x: x.x)
+        def cross(o, a, b):
+            return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+        if cross(stri[0], stri[1], stri[2]) > 0:
+            stri[1], stri[2] = stri[2], stri[1]
+        self._draw([*stri[0]], [*stri[1]], [*stri[2]], self.color)
 
 @dataclass
 class EllipseActor2D(ShapeActor2D, BaseShape):
@@ -100,6 +137,7 @@ class EllipseActor2D(ShapeActor2D, BaseShape):
     width: float = 1.
     height: float = 1.
 
+    @override
     def draw(self):
         self._draw(self.position.x, self.position.y, self.width, self.height, self.color)
 
@@ -118,6 +156,7 @@ class SpriteActor2D(Actor2D):
     def height(self):
         return self.texture.height
 
+    @override
     def draw(self):
         if not self.texture:
             return
