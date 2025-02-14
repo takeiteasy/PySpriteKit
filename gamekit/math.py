@@ -332,4 +332,12 @@ from .vector import Vector2, Vector3, Vector4
 from .quaternion import Quaternion
 from .matrix import Matrix3, Matrix4
 
-__all__ = ['Vector2', 'Vector3', 'Vector4', 'Quaternion', 'Matrix3', 'Matrix4', 'ease_linear_none', 'ease_linear_in', 'ease_linear_out', 'ease_linear_in_out', 'ease_sine_in', 'ease_sine_out', 'ease_sine_in_out', 'ease_circ_in', 'ease_circ_out', 'ease_circ_in_out', 'ease_cubic_in', 'ease_cubic_out', 'ease_cubic_in_out', 'ease_quad_in', 'ease_quad_out', 'ease_quad_in_out', 'ease_expo_in', 'ease_expo_out', 'ease_expo_in_out', 'ease_back_in', 'ease_back_out', 'ease_back_in_out', 'ease_bounce_in', 'ease_bounce_out', 'ease_bounce_in_out', 'ease_elastic_in', 'ease_elastic_out', 'ease_elastic_in_out']
+__all__ = [
+    'Vector2', 'Vector3', 'Vector4', 'Quaternion', 'Matrix3', 'Matrix4',
+    'ease_linear_none', 'ease_linear_in', 'ease_linear_out', 'ease_linear_in_out',
+    'ease_sine_in', 'ease_sine_out', 'ease_sine_in_out', 'ease_circ_in', 'ease_circ_out',
+    'ease_circ_in_out', 'ease_cubic_in', 'ease_cubic_out', 'ease_cubic_in_out',
+    'ease_quad_in', 'ease_quad_out', 'ease_quad_in_out', 'ease_expo_in', 'ease_expo_out',
+    'ease_expo_in_out', 'ease_back_in', 'ease_back_out', 'ease_back_in_out', 'ease_bounce_in',
+    'ease_bounce_out', 'ease_bounce_in_out', 'ease_elastic_in', 'ease_elastic_out',
+    'ease_elastic_in_out']

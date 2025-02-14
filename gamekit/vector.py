@@ -1,7 +1,8 @@
-import numpy as np
+
 from numbers import Number
 from multipledispatch import dispatch
-from .math import all_parameters_as_numpy_arrays, parameters_as_numpy_arrays, BaseObject, BaseVector, BaseVector2, BaseVector3, BaseVector4, BaseMatrix, BaseMatrix3, BaseMatrix4
+from .math import (all_parameters_as_numpy_arrays, parameters_as_numpy_arrays, 
+                   BaseObject, BaseVector, BaseVector2, BaseVector3, BaseVector4)
 
 @all_parameters_as_numpy_arrays
 def vector_normalize(vec):    # TODO: mark as deprecated

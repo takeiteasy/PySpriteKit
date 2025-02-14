@@ -1,5 +1,7 @@
-from .vector import vector_normalize, vector_squared_length, vector_length, vector_dot, BaseVector, Vector3
-from .math import all_parameters_as_numpy_arrays, parameters_as_numpy_arrays, BaseObject, BaseQuaternion, BaseMatrix3, BaseMatrix4, BaseMatrix
+from .vector import (vector_normalize, vector_squared_length, vector_length, vector_dot,
+                     BaseVector, Vector3)
+from .math import (all_parameters_as_numpy_arrays, parameters_as_numpy_arrays, 
+                   BaseObject, BaseQuaternion, BaseMatrix3, BaseMatrix4, BaseMatrix)
 import numpy as np
 from multipledispatch import dispatch
 

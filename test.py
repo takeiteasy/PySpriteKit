@@ -37,7 +37,7 @@ class TestScene(gk.Scene):
                                     autostart=True))
 
     @override
-    def prestep(self, delta):
+    def step(self, delta):
         if gk.Keyboard.key_pressed("space"):
             if self.find_children("test"):
                 self.remove_children("test")
@@ -48,3 +48,4 @@ class TestScene(gk.Scene):
             child.position.x += 100 * delta
         for child in self.children("tset"):
             child.rotation += 100 * delta
+        super().step(delta)
