@@ -169,6 +169,41 @@ class SpriteActor2D(Actor2D):
                            [self.dst.x, self.dst.y, self.dst.width * self.scale.x, self.dst.height * self.scale.y],
                            [*(-self._offset() * self.scale)], self.rotation, self.color)
 
+@dataclass
+class LabelActor2D(Actor2D):
+    text: str = ""
+    font: r.Font = None
+    font_size: float = 16.
+    spacing: float = 2.
+    color: r.Color = RAYWHITE
+
+    def _size(self):
+        size = r.measure_text_ex(self.font, self.text.encode('utf-8'), self.font_size, self.spacing)
+        if not hasattr(self, '_width'):
+            self._width = size.x
+        if not hasattr(self, '_height'):
+            self._height = size.y
+        return size
+
+    @property
+    def width(self):
+        if not hasattr(self, '_width'):
+            return self._size().x
+        else:
+            return self._width
+
+    @property
+    def height(self):
+        if not hasattr(self, '_height'):
+            return self._size().y
+        else:
+            return self._height
+
+    def draw(self):
+        if not self.font:
+            self.font = r.get_font_default()
+        r.draw_text_pro(self.font, self.text.encode('utf-8'), [0,0], [*-self._offset()], self.rotation, self.font_size, self.spacing, self.color)
+
 class Line2D(LineActor2D):
     pass
 
@@ -185,4 +220,7 @@ class Ellipse(EllipseActor2D):
     pass
 
 class Sprite(SpriteActor2D):
+    pass
+
+class Label(LabelActor2D):
     pass

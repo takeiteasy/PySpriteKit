@@ -36,17 +36,23 @@ class TestScene(gk.Scene):
                                  texture=gk.Texture(f"assets/textures/LA"),
                                  origin=gk.Vector2([1., 1.]),
                                  scale=gk.Vector2([0.5, 0.5])))
+        self.add_child(gk.Label(name="tset",
+                                text="Hello, World!",
+                                font_size=24,
+                                color=gk.Color(1., 0., 1.)))
 
     @override
     def step(self, delta):
         if gk.Keyboard.key_pressed("space"):
-            if self.children:
+            if self.find_children("test"):
                 self.remove_children("test")
             else:
                 self.enter()
         
         for child in self.children("test"):
             child.position.x += 100 * delta
+        for child in self.children("tset"):
+            child.rotation += 100 * delta
 ```
 
 ## LICENSE
