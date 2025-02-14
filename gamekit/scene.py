@@ -11,7 +11,6 @@ class Scene(FiniteStateMachine, ActorParent):
     config: dict = {}
 
     def __init__(self, **kwargs):
-        ActorParent.__init__(self)
         FiniteStateMachine.__init__(self, **kwargs)
         self.camera = r.Camera2D()
         self.camera.target = 0, 0
@@ -47,6 +46,9 @@ class Scene(FiniteStateMachine, ActorParent):
     def poststep(self, delta):
         pass
 
+    def step_background(self, delta):
+        pass
+
     def draw(self):
         r.clear_background(self.clear_color)
         r.begin_mode_2d(self.camera)
@@ -60,26 +62,40 @@ class Scene(FiniteStateMachine, ActorParent):
     def postdraw(self):
         pass
 
-def push_scene(scene: Scene):
-    global __next_scene
-    if __next_scene is not None:
-        raise RuntimeError("Next scene already queued")
-    __next_scene = scene
+    def draw_background(self):
+        pass
+    
+    @classmethod
+    def push_scene(cls, scene: Scene):
+        global __next_scene
+        if __next_scene is not None:
+            raise RuntimeError("Next scene already queued")
+        __next_scene = scene
 
-def drop_scene():
-    global __scene__, __drop_scene
-    if __drop_scene is not None:
-        raise RuntimeError("Drop scene already queued")
-    __drop_scene = __scene__[-1:]
+    @classmethod
+    def drop_scene(cls):
+        global __scene__, __drop_scene
+        if __drop_scene is not None:
+            raise RuntimeError("Drop scene already queued")
+        __drop_scene = __scene__[-1:]
 
-def first_scene():
-    global __scene__, __drop_scene
-    __drop_scene = __scene__[1:]
+    @classmethod
+    def first_scene(cls):
+        global __scene__, __drop_scene
+        __drop_scene = __scene__[1:]
 
-def get_scene():
-    if not __scene__:
-        raise RuntimeError("No active Scene")
-    return __scene__[0]
+    @classmethod
+    def current_scene(cls):
+        if not __scene__:
+            raise RuntimeError("No active Scene")
+        return __scene__[-1]
+    
+    @classmethod
+    def main_scene(cls):
+        global __next_scene
+        if __next_scene is None:
+            raise RuntimeError("No next scene queued")
+        return __scene__[0]
 
 def main_scene(cls):
     global __scene__, __drop_scene, __next_scene
