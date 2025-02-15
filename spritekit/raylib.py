@@ -133,9 +133,7 @@ class IFuckingHateYouPython:
         self.stupidfuckingidiotfuction = stupidfuckingidiotfuction
 
     def __getattr__(self, kname):
-        k = getattr(rl, self.stupidfuckingidiotfuction(kname))
-        print(k)
-        return k
+        return getattr(rl, self.stupidfuckingidiotfuction(kname))
 
 Keys = IFuckingHateYouPython(stupidfuckingidiotfuction=_fix_key)
 
