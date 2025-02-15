@@ -1,4 +1,4 @@
-# gamekit/quaternion.py
+# spritekit/quaternion.py
 #
 # Copyright (C) 2025 George Watson
 #

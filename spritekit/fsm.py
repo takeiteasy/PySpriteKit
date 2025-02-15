@@ -1,4 +1,4 @@
-# gamekit/fsm.py
+# spritekit/fsm.py
 #
 # Copyright (C) 2025 George Watson
 #

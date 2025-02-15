@@ -24,15 +24,15 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
     install_requires = fh.read().splitlines()
 
 setup(
-    name="gamekit",
+    name="spritekit",
     version="0.0.1",
     author="George Watson",
     author_email="gigolo@hotmail.co.uk",
     description="2D scene+actor framework built on top of raylib",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/takeiteasy/gamekit",
-    packages=find_packages(include=['gamekit', 'gamekit.*']),
+    url="https://github.com/takeiteasy/PySpriteKit",
+    packages=find_packages(include=['spritekit', 'spritekit.*']),
     install_requires=install_requires,
     setup_requires=install_requires,
     classifiers=[

@@ -1,4 +1,4 @@
-# gamekit/scene.py
+# spritekit/scene.py
 #
 # Copyright (C) 2025 George Watson
 #
@@ -113,7 +113,7 @@ def main_scene(cls):
         raise RuntimeError("There can only be one @main_scene")
     r.init_window(cls.config['width'] if "width" in cls.config else 800,
                   cls.config['height'] if "height" in cls.config else 600,
-                  cls.config['title'] if "title" in cls.config else "GameKit")
+                  cls.config['title'] if "title" in cls.config else "spritekit")
     r.set_config_flags(cls.config['flags'] if "flags" in cls.config else r.ConfigFlags.FLAG_WINDOW_RESIZABLE)
     r.init_audio_device()
     if "fps" in cls.config:

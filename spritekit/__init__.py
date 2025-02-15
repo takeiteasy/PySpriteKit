@@ -1,4 +1,4 @@
-# gamekit/__init__.py
+# spritekit/__init__.py
 #
 # Copyright (C) 2025 George Watson
 #

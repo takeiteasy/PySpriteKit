@@ -1,4 +1,4 @@
-import gamekit as gk
+import spritekit as gk
 from typing import override
 
 @gk.main_scene

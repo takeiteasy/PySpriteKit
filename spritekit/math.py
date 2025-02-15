@@ -1,4 +1,4 @@
-# gamekit/math.py
+# spritekit/math.py
 #
 # Copyright (C) 2025 George Watson
 #

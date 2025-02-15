@@ -1,4 +1,4 @@
-# gamekit/vector.py
+# spritekit/vector.py
 #
 # Copyright (C) 2025 George Watson
 #

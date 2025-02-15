@@ -1,4 +1,4 @@
-# gamekit/actor.py
+# spritekit/actor.py
 #
 # Copyright (C) 2025 George Watson
 #

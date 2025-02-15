@@ -3,7 +3,7 @@ requires = ["setuptools>=72.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gamekit"
+name = "spritekit"
 version = "0.0.1"
 authors = [
   { name="George Watson", email="gigolo@hotmail.co.uk" },
@@ -29,5 +29,5 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/takeiteasy/gamekit"
-Issues = "https://github.com/takeiteasy/gamekit/issues"
+Homepage = "https://github.com/takeiteasy/PySpriteKit"
+Issues = "https://github.com/takeiteasy/PySpriteKit/issues"

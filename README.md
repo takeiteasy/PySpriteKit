@@ -1,4 +1,4 @@
-# gamekit
+# PySpriteKit
 
 > [!WARNING]
 > Work in progress, see [TODO](#todo)
@@ -6,7 +6,7 @@
 2D scene+actor framework built on top of [raylib](https://github.com/raysan5/raylib), based off [SpriteKit](https://developer.apple.com/documentation/spritekit) by Apple.
 
 > [!NOTE]
-> `pip install gamekit==0.0.1`
+> `pip install spritekit==0.0.1`
 
 ### Features
 
@@ -22,7 +22,7 @@
 ### Example
 
 ```python3
-import gamekit as gk
+import spritekit as gk
 from typing import override
 
 @gk.main_scene
@@ -116,7 +116,7 @@ typing==3.7.4.3
 ## LICENSE
 
 ```
-gamekit
+PySpriteKit
 
 Copyright (C) 2025 George Watson
 

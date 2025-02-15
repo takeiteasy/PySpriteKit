@@ -1,4 +1,4 @@
-# gamekit/raylib.py
+# spritekit/raylib.py
 #
 # Copyright (C) 2025 George Watson
 #
