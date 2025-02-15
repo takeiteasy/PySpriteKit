@@ -3,7 +3,7 @@
 > [!WARNING]
 > Work in progress, see [TODO](#todo)
 
-2D scene+actor framework built on top of raylib, based off SpriteKit by Apple.
+2D scene+actor framework built on top of [raylib](https://github.com/raysan5/raylib), based off [SpriteKit](https://developer.apple.com/documentation/spritekit) by Apple.
 
 ### Features
 
