@@ -11,9 +11,8 @@ class TestScene(gk.Scene):
         "flags": gk.Flags.window_resizable,
         "fps": 60
     }
-    
-    @override
-    def enter(self):
+
+    def add_stuff(self):
         self.add_child(gk.RectangleNode(name="test",
                                         width=100,
                                         height=100,
@@ -30,19 +29,28 @@ class TestScene(gk.Scene):
                                      texture=gk.Texture(f"assets/textures/LA.png"),
                                      origin=gk.Vector2([1., 1.]),
                                      scale=gk.Vector2([0.5, 0.5])))
-        self.add_child(gk.LabelNode(text="Hello, World!",
+    
+    @override
+    def enter(self):
+        self.add_child(gk.LabelNode(name="tset",
+                                    text="Hello, World!",
                                     font_size=24,
                                     color=gk.Color(1., 0., 1.)))
-        self.add_child(gk.MusicNode(music=gk.Music(f"assets/audio/country.mp3"),
+        self.add_child(gk.MusicNode(name="bg",
+                                    music=gk.Music(f"assets/audio/country.mp3"),
                                     autostart=True))
+        self.add_stuff()
 
     @override
     def step(self, delta):
-        if gk.Keyboard.key_pressed("space"):
+        if gk.Keyboard.key_pressed("r"):
             if self.find_children("test"):
                 self.remove_children("test")
             else:
-                self.enter()
+                self.add_stuff()
+        if gk.Keyboard.key_pressed("space"):
+            for child in self.find_children("bg"):
+                child.toggle()
         
         for child in self.children("test"):
             child.position.x += 100 * delta

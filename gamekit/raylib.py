@@ -1,3 +1,20 @@
+# gamekit/raylib.py
+#
+# Copyright (C) 2025 George Watson
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import pyray as r
 import raylib as rl
 from pyglsl import VertexStage, FragmentStage
@@ -67,7 +84,7 @@ def unload_cache(key: str = None):
             _unload_asset(key)
 
 def _file_locations(name):
-    return ['.', f"data/{name}", name]
+    return ['.', f"assets/{name}", name]
 
 def Image(file: str):
     return r.load_image(find_file(file, __image_extensions, _file_locations('textures')))
@@ -212,17 +229,6 @@ class Mouse:
     Handles input from mouse
     """
     @classmethod
-    def get_position_on_ground(cls, ground_level):
-        pos = r.get_mouse_position()
-        ray = r.get_mouse_ray(pos, __camera[0])
-        rayhit = r.get_collision_ray_ground(ray, ground_level)
-        return rayhit.position.x, rayhit.position.y, rayhit.position.z
-
-    @classmethod
-    def ground_position(cls, ground_level):
-        return cls.get_position_on_ground(ground_level)
-
-    @classmethod
     def left_button(cls):
         return r.is_mouse_button_down(rl.MOUSE_LEFT_BUTTON)
 
@@ -237,14 +243,6 @@ class Mouse:
     @classmethod
     def clicked(cls):
         return r.is_mouse_button_pressed(rl.MOUSE_LEFT_BUTTON)
-
-    @classmethod
-    def check_collision(cls, actor):
-        if not actor.loaded:
-            actor.load_data()
-        pos = r.get_mouse_position()
-        ray = r.get_mouse_ray(pos, __camera[0])
-        return r.check_collision_ray_box(ray, actor.calc_bounding_box())
 
 def Color(_r: int | float, g: int | float, b: int | float, a: int | float = 255):
     return r.Color(*[x if isinstance(x, int) else int(x * 255.) for x in [_r, g, b, a]])

@@ -1,7 +1,20 @@
 # gamekit
 
 > [!WARNING]
-> Work in progress
+> Work in progress, see [TODO](#todo)
+
+2D scene+actor framework built on top of raylib, based off SpriteKit by Apple.
+
+### Features
+
+- Raylib bindings (using [raylib-python-cffi](https://github.com/electronstudio/raylib-python-cffi/tree/master))
+- 2D rendering (shapes, sprites, text)
+- Audio (music, sound effects)
+- Scene management
+- Actor framework
+- Linear algebra (vector, matrix, quaternion, taken from [Pyrr](https://github.com/adamlwgriffiths/Pyrr))
+- Easing functions (taken from [raylib-py](https://github.com/overdev/raylib-py/blob/master/src/raylibpy/easings.py))
+- Finite state machine (build on top of [transitions](https://github.com/pytransitions/transitions))
 
 ```python3
 import gamekit as gk
@@ -13,49 +26,90 @@ class TestScene(gk.Scene):
         "width": 800,
         "height": 600,
         "title": "Test",
-        "exit_key": gk.KeyboardKey.KEY_ESCAPE,
-        "flags": gk.ConfigFlags.FLAG_WINDOW_RESIZABLE,
+        "exit_key": gk.Keys.escape,
+        "flags": gk.Flags.window_resizable,
         "fps": 60
     }
+
+    def add_stuff(self):
+        self.add_child(gk.RectangleNode(name="test",
+                                        width=100,
+                                        height=100,
+                                        color=gk.Color(1., 0, 0)))
+        self.add_child(gk.CircleNode(name="test",
+                                     position=gk.Vector2([100, 100]),
+                                     radius=100,
+                                     color=gk.Color(0, 1., 0)))
+        self.add_child(gk.TriangleNode(name="test",
+                                       position2=gk.Vector2([100, 200]),
+                                       position3=gk.Vector2([200, 100]),
+                                       color=gk.Color(0, 0, 1.)))
+        self.add_child(gk.SpriteNode(name="test",
+                                     texture=gk.Texture(f"assets/textures/LA.png"),
+                                     origin=gk.Vector2([1., 1.]),
+                                     scale=gk.Vector2([0.5, 0.5])))
     
     @override
     def enter(self):
-        self.add_child(gk.Rectangle(name="test",
-                                    width=100,
-                                    height=100,
-                                    color=gk.Color(1., 0, 0)))
-        self.add_child(gk.Circle(name="test",
-                                 position=gk.Vector2([100, 100]),
-                                 radius=100,
-                                 color=gk.Color(0, 1., 0)))
-        self.add_child(gk.Triangle(name="test",
-                                   position2=gk.Vector2([100, 200]),
-                                   position3=gk.Vector2([200, 100]),
-                                   color=gk.Color(0, 0, 1.)))
-        self.add_child(gk.Sprite(name="test",
-                                 texture=gk.Texture(f"assets/textures/LA"),
-                                 origin=gk.Vector2([1., 1.]),
-                                 scale=gk.Vector2([0.5, 0.5])))
-        self.add_child(gk.Label(name="tset",
-                                text="Hello, World!",
-                                font_size=24,
-                                color=gk.Color(1., 0., 1.)))
+        self.add_child(gk.LabelNode(name="tset",
+                                    text="Hello, World!",
+                                    font_size=24,
+                                    color=gk.Color(1., 0., 1.)))
+        self.add_child(gk.MusicNode(name="bg",
+                                    music=gk.Music(f"assets/audio/country.mp3"),
+                                    autostart=True))
+        self.add_stuff()
 
     @override
     def step(self, delta):
-        if gk.Keyboard.key_pressed("space"):
+        if gk.Keyboard.key_pressed("r"):
             if self.find_children("test"):
                 self.remove_children("test")
             else:
-                self.enter()
+                self.add_stuff()
+        if gk.Keyboard.key_pressed("space"):
+            for child in self.find_children("bg"):
+                child.toggle()
         
         for child in self.children("test"):
             child.position.x += 100 * delta
         for child in self.children("tset"):
             child.rotation += 100 * delta
+        super().step(delta) # update scene internal step
 ```
 
+## Requirements
+
+```
+attrs==25.1.0
+cffi==1.17.1
+multipledispatch==1.0.0
+numpy==2.2.2
+pycparser==2.22
+pyglsl==0.0.5
+raylib==5.5.0.2
+six==1.17.0
+transitions==0.9.2
+typing==3.7.4.3
+```
+
+## TODO
+
+- [ ] Action Nodes
+- [ ] Timer Node
+- [ ] RenderTexture wrapper
+- [ ] Emitter Node
+- [ ] TileMap Node
+- [ ] 3D Nodes
+- [ ] 2D + 3D Collision
+- [ ] 2D Physics
+- [ ] Video Node
+- [ ] Transform Node
+- [ ] Add examples
+- [ ] Add documentation
+
 ## LICENSE
+
 ```
 gamekit
 

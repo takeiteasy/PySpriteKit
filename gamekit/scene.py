@@ -1,3 +1,20 @@
+# gamekit/scene.py
+#
+# Copyright (C) 2025 George Watson
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from .actor import ActorType, ActorParent
 from .fsm import FiniteStateMachine
 import pyray as r
@@ -17,6 +34,7 @@ class Scene(FiniteStateMachine, ActorParent):
         self.camera.offset = r.get_screen_width() / 2, r.get_screen_height() / 2
         self.camera.zoom = 1.
         self.clear_color = r.RAYWHITE
+        self.run_in_background = False
         self.assets = {} # TODO: Store and restore assets to __cache in raylib.py
     
     @override
@@ -40,14 +58,9 @@ class Scene(FiniteStateMachine, ActorParent):
         for child in self.all_children():
             child.step(delta)
 
-    def prestep(self, delta):
-        pass
-
-    def poststep(self, delta):
-        pass
-
     def step_background(self, delta):
-        pass
+        if self.run_in_background:
+            self.step(delta)
 
     def draw(self):
         r.clear_background(self.clear_color)
@@ -56,14 +69,9 @@ class Scene(FiniteStateMachine, ActorParent):
             child.draw()
         r.end_mode_2d()
 
-    def predraw(self):
-        pass
-
-    def postdraw(self):
-        pass
-
     def draw_background(self):
-        pass
+        if self.run_in_background:
+            self.draw()
     
     @classmethod
     def push_scene(cls, scene):
@@ -117,13 +125,15 @@ def main_scene(cls):
     scn.enter()
     while not r.window_should_close() and __scene__:
         dt = r.get_frame_time()
-        scn.prestep(dt)
+        if len(__scene__) > 1:
+            for _scn in __scene__[:-1]:
+                _scn.step_background(dt)
         scn.step(dt)
-        scn.poststep(dt)
         r.begin_drawing()
-        scn.predraw()
+        if len(__scene__) > 1:
+            for _scn in __scene__[:-1]:
+                _scn.draw_background()
         scn.draw()
-        scn.postdraw()
         r.end_drawing()
         if __drop_scene:
             if isinstance(__drop_scene, list):

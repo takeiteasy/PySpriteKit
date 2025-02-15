@@ -1,3 +1,20 @@
+# gamekit/actor.py
+#
+# Copyright (C) 2025 George Watson
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from .vector import Vector2
 from dataclasses import dataclass, field
 from typing import Optional, override
@@ -104,8 +121,7 @@ class RectangleActor2D(ShapeActor2D, BaseShape):
 
     @override
     def draw(self):
-        pos = self._offset()
-        rec = r.Rectangle(pos.x, pos.y, self.width, self.height)
+        rec = r.Rectangle(*self._offset(), self.width, self.height)
         if self.wireframe:
             self._draw(rec, self.line_thickness, self.color)
         else:
@@ -342,6 +358,20 @@ class MusicActor(AudioActor):
     @property
     def length(self):
         return r.get_music_time_length(self.audio)
+    
+    @property
+    def position(self):
+        return r.get_music_time_played(self.audio)
+    
+    @position.setter
+    def position(self, value: float):
+        r.seek_music_stream(self.audio, value)
+
+    def toggle(self):
+        if self.playing:
+            self.pause()
+        else:
+            self.play()
     
     def step(self, _: float):
         if not self.playing:
