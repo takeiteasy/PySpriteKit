@@ -1,5 +1,5 @@
 from .raylib import (Keyboard, Keys, Mouse, Texture, Shader, CompileShader, Model, Gamepad,
-                     find_file, Rectangle, Color, unload_cache, Image, Wave, Sound, Music)
+                     find_file, Rectangle, Color, unload_cache, Image, Wave, Sound, Music, Flags)
 from .math import *
 from .scene import Scene, main_scene
 from .fsm import State, Transition, FiniteStateMachine

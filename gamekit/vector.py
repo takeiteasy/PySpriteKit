@@ -2,7 +2,8 @@
 from numbers import Number
 from multipledispatch import dispatch
 from .math import (all_parameters_as_numpy_arrays, parameters_as_numpy_arrays, 
-                   BaseObject, BaseVector, BaseVector2, BaseVector3, BaseVector4)
+                   BaseObject, BaseVector, BaseVector2, BaseVector3, BaseVector4,
+                   BaseMatrix)
 import numpy as np
 
 @all_parameters_as_numpy_arrays

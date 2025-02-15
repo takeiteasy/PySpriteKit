@@ -7,8 +7,8 @@ class TestScene(gk.Scene):
         "width": 800,
         "height": 600,
         "title": "Test",
-        "exit_key": gk.KeyboardKey.KEY_ESCAPE,
-        "flags": gk.ConfigFlags.FLAG_WINDOW_RESIZABLE,
+        "exit_key": gk.Keys.escape,
+        "flags": gk.Flags.window_resizable,
         "fps": 60
     }
     

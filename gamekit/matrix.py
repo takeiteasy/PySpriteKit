@@ -281,7 +281,7 @@ class MatrixCore:
         """
         return np.linalg.inv(self)
 
-def m324(m33: BaseMatrix3, dtype=None) -> np.ndarray:
+def m324(m33, dtype=None):
     dtype = dtype or m33.dtype
     m = np.identity(4, dtype=dtype)
     m[0:3, 0:3] = m33

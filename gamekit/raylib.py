@@ -111,9 +111,24 @@ def _fix_key(kname):
         kname = "KEY_" + kname
     return kname
 
-class Keys:
+class IFuckingHateYouPython:
+    def __init__(self, stupidfuckingidiotfuction):
+        self.stupidfuckingidiotfuction = stupidfuckingidiotfuction
+
     def __getattr__(self, kname):
-        return getattr(rl, _fix_key(kname))
+        k = getattr(rl, self.stupidfuckingidiotfuction(kname))
+        print(k)
+        return k
+
+Keys = IFuckingHateYouPython(stupidfuckingidiotfuction=_fix_key)
+
+def _fix_flag(kname):
+    kname = kname.upper()
+    if not kname.startswith("FLAG_"):
+        kname = "FLAG_" + kname
+    return kname
+
+Flags = IFuckingHateYouPython(stupidfuckingidiotfuction=_fix_flag)
 
 class Keyboard:
     """
@@ -124,22 +139,22 @@ class Keyboard:
         return getattr(rl, _fix_key(kname) if isinstance(kname, str) else kname)
 
     @classmethod
-    def __getattr__(cls, kname: str | Keys):
+    def __getattr__(cls, kname: str | r.KeyboardKey | int):
         return rl.IsKeyDown(getattr(rl, _fix_key(kname) if isinstance(kname, str) else kname))
 
     @classmethod
-    def key_down(cls, kname: str | Keys):
+    def key_down(cls, kname: str | r.KeyboardKey | int):
         """
         Test if key is currently down
         """
-        return rl.IsKeyDown(cls._fix_kname(kname))
+        return rl.IsKeyDown(cls._fix_kname(kname) if isinstance(kname, str) else kname)
 
     @classmethod
-    def key_pressed(cls, kname: str | Keys):
+    def key_pressed(cls, kname: str | r.KeyboardKey | int):
         """
         Test if key was pressed recently
         """
-        return rl.IsKeyPressed(cls._fix_kname(kname))
+        return rl.IsKeyPressed(cls._fix_kname(kname) if isinstance(kname, str) else kname)
     
 class Gamepad:
     """

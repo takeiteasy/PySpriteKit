@@ -66,7 +66,9 @@ class Scene(FiniteStateMachine, ActorParent):
         pass
     
     @classmethod
-    def push_scene(cls, scene: Scene):
+    def push_scene(cls, scene):
+        if not isinstance(scene, Scene):
+            raise RuntimeError("Invalid Scene")
         global __next_scene
         if __next_scene is not None:
             raise RuntimeError("Next scene already queued")
