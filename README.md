@@ -5,6 +5,9 @@
 
 2D scene+actor framework built on top of [raylib](https://github.com/raysan5/raylib), based off [SpriteKit](https://developer.apple.com/documentation/spritekit) by Apple.
 
+> [!NOTE]
+> `pip install gamekit==0.0.1`
+
 ### Features
 
 - Raylib bindings (using [raylib-python-cffi](https://github.com/electronstudio/raylib-python-cffi/tree/master))
@@ -15,6 +18,8 @@
 - Linear algebra (vector, matrix, quaternion, taken from [Pyrr](https://github.com/adamlwgriffiths/Pyrr))
 - Easing functions (taken from [raylib-py](https://github.com/overdev/raylib-py/blob/master/src/raylibpy/easings.py))
 - Finite state machine (build on top of [transitions](https://github.com/pytransitions/transitions))
+
+### Example
 
 ```python3
 import gamekit as gk
