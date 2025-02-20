@@ -17,10 +17,12 @@
 
 from .vector import Vector2
 from dataclasses import dataclass, field
-from typing import Optional, override
+from typing import Optional, override, Callable
 from raylib.colors import *
 import raylib as rl
 import pyray as r
+from .easing import ease_linear_in_out
+from queue import Queue
 
 class ActorType:
     pass
@@ -49,6 +51,12 @@ class ActorParent:
     def children(self, name: Optional[str] = ""):
         for child in self.find_children(name):
             yield child
+    
+    def remove_child(self, child: str | ActorType = None):
+        if isinstance(child, str):
+            self.remove_children(name=child)
+        else:
+            self._children.remove(child)
 
     def remove_children(self, name: Optional[str] = ""):
         self._children = [x for x in (self._children if hasattr(self, '_children') else []) if x.name != name]
@@ -75,6 +83,59 @@ class Actor(ActorType, ActorParent):
     def draw(self):
         for child in self.all_children():
             child.draw()
+
+@dataclass
+class TimerActor(Actor):
+    interval: float = 1.
+    repeat: bool = False
+    on_complete: Callable[[], None] = None
+    auto_start: bool = True
+    remove_on_complete: Optional[bool] = None 
+    position: Optional[float] = None
+
+    def __post_init__(self):
+        self._running = self.auto_start
+        if not self.position:
+            self.position = self.interval if self._running else 0
+        if not self.remove_on_complete:
+            self.remove_on_complete = not self.repeat
+
+    def step(self, delta: float):
+        if not self._running:
+            return
+        if self.position > 0:
+            self.position -= delta
+            if self.position <= 0:
+                if self.repeat:
+                    self.position = self.interval
+                else:
+                    self.position = 0
+                    self._running = False
+                if self.on_complete:
+                    self.on_complete()
+                if self.remove_on_complete:
+                    if self.scene:
+                        self.scene.remove_child(self)
+    
+    def reset(self):
+        self.position = self.interval
+    
+    def start(self):
+        self._running = True
+        self.position = self.interval
+    
+    def stop(self):
+        self._running = False
+        self.position = 0
+    
+    def pause(self):
+        self._running = False
+
+    def resume(self):
+        self._running = True
+
+class TimerNode(TimerActor):
+    pass
 
 @dataclass
 class Actor2D(Actor):

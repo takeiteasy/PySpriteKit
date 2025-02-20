@@ -30,6 +30,11 @@ class TestScene(sk.Scene):
                                      origin=sk.Vector2([1., 1.]),
                                      scale=sk.Vector2([0.5, 0.5])))
     
+    def add_circle(self):
+        self.add_child(sk.CircleNode(name="test",
+                                     radius=50,
+                                     color=sk.Color(1., 0, 1.)))
+
     @override
     def enter(self):
         self.add_child(sk.LabelNode(name="tset",
@@ -39,6 +44,10 @@ class TestScene(sk.Scene):
         self.add_child(sk.MusicNode(name="bg",
                                     music=sk.Music(f"assets/audio/country.mp3"),
                                     autostart=True))
+        self.add_child(sk.TimerNode(name="timer",
+                                    interval=1.,
+                                    repeat=True,
+                                    on_complete=lambda: self.add_circle()))
         self.add_stuff()
 
     @override
