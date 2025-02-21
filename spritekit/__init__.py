@@ -21,4 +21,4 @@ from .math import *
 from .scene import Scene, main_scene
 from .fsm import State, Transition, FiniteStateMachine
 from .actor import (Line2DNode, RectangleNode, CircleNode, TriangleNode, EllipseNode, SpriteNode,
-                    LabelNode, MusicNode, SoundNode, TimerNode, ActionNode)
+                    LabelNode, MusicNode, SoundNode, TimerNode, ActionNode, ActionSequence, WaitAction)

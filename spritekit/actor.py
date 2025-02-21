@@ -22,6 +22,7 @@ from raylib.colors import *
 import raylib as rl
 import pyray as r
 from .easing import ease_linear_in_out
+from contextlib import contextmanager
 from queue import Queue
 
 class ActorType:
@@ -83,6 +84,10 @@ class Actor(ActorType, ActorParent):
     def add_child(self, node: ActorType):
         node.parent = self
         self._add_child(node)
+    
+    def remove_me(self):
+        if hasattr(self, "scene") and self.scene is not None:
+            self.scene.remove_child(self)
 
     def step(self, delta: float):
         for child in self.all_children():
@@ -105,6 +110,7 @@ class BaseTimer(Actor):
 class TimerNode(BaseTimer):
     def __init__(self, **kwargs):
         BaseTimer.__init__(self, **kwargs)
+        self._completed = False
         self._running = self.auto_start
         if not self.cursor:
             self.cursor = self.interval if self._running else 0
@@ -122,38 +128,63 @@ class TimerNode(BaseTimer):
                 else:
                     self.cursor = 0
                     self._running = False
+                    self._completed = True
                 if self.on_complete:
                     self.on_complete()
                 if self.remove_on_complete:
-                    if self.scene:
-                        self.scene.remove_child(self)
+                    self.remove_me()
             else:
                 if self.on_tick:
                     self.on_tick(self.cursor)
     
     def reset(self):
+        self._completed = False
         self.cursor = self.interval
     
     def start(self):
-        self._running = True
-        self.cursor = self.interval
+        if not self._running:
+            self._running = True
+            self._completed = False
+            self.cursor = self.interval
     
     def stop(self):
         self._running = False
+        self._completed = True
         self.cursor = 0
     
     def pause(self):
-        self._running = False
+        if not self._completed:
+            self._running = False
 
     def resume(self):
-        self._running = True
+        if not self._completed:
+            self._running = True
+
+class ActionType:
+    pass
 
 @dataclass
-class ActionNode(TimerNode):
+class ActionNode(ActionType, TimerNode):
     easing_fn: Callable[[float, float, float, float], float] = staticmethod(ease_linear_in_out)
     actor: Actor = None
     field: str = None
     target: any = None
+
+    @contextmanager
+    def _initial_value(self):
+        obj = self.actor
+        for i in range(len(self.field)):
+            if i == len(self.field) - 1:
+                f = getattr(obj, self.field[i])
+                if f is None:
+                    raise RuntimeError(f"Object has no field {self.field[i]}")
+                if not isinstance(f, type(self.target)):
+                    raise RuntimeError(f"Field {self.field[i]} is not of type {type(self.target)}")
+                yield f
+            else:
+                if not hasattr(obj, self.field[i]):
+                    raise RuntimeError(f"Object has no field {self.field[i]}")
+                obj = getattr(obj, self.field[i])
 
     def __init__(self, **kwargs):
         new_kwargs = {
@@ -164,34 +195,32 @@ class ActionNode(TimerNode):
         self.actor = kwargs.pop("actor", None)
         self.field = kwargs.pop("field", None)
         self.target = kwargs.pop("target", None)
-        if not self.actor:
+        if self.actor is None:
             raise RuntimeError("Actor is not set")
-        if not self.field:
+        if self.field is None:
             raise RuntimeError("Field is not set")
+        if self.target is None:
+            raise RuntimeError("Target is not set")
         self.field = self.field.split(".") if "." in self.field else [self.field]
-        obj = self.actor
-        for i in range(len(self.field)):
-            if i == len(self.field) - 1:
-                f = getattr(obj, self.field[i])
-                if f is None:
-                    raise RuntimeError(f"Object has no field {self.field[i]}")
-                if not isinstance(f, type(self.target)):
-                    raise RuntimeError(f"Field {self.field[i]} is not of type {type(self.target)}")
-                self._start = f
-            else:
-                if not hasattr(obj, self.field[i]):
-                    raise RuntimeError(f"Object has no field {self.field[i]}")
-                obj = getattr(obj, self.field[i])
+        self._initial_value()
         if "easing_fn" in kwargs:
             self.easing_fn = staticmethod(kwargs.pop("easing_fn"))
-        self.on_complete = self._remove_me
+        self._start = None
+        self.on_complete = self.remove_me
         self.on_tick = self._step
+
+    @property
+    def completed(self):
+        return self._completed
     
-    def _remove_me(self):
-        if self.scene:
-            self.scene.remove_child(self)
+    @property
+    def running(self):
+        return self._running
     
     def _step(self, delta: float):
+        if not self._start:
+            with self._initial_value() as start:
+                self._start = start
         elapsed = self.interval - self.cursor
         delta = self.target - self._start
         obj = self.actor
@@ -210,6 +239,77 @@ class ActionNode(TimerNode):
                     setattr(obj, self.field[i], v)
             else:
                 obj = getattr(obj, self.field[i])
+
+class WaitAction(ActionType, TimerNode):
+    def __init__(self, duration: float, auto_start: bool = True):
+        TimerNode.__init__(self, interval=duration, auto_start=auto_start)
+        self.on_complete = staticmethod(self._on_complete)
+        self._completed = False
+    
+    @property
+    def completed(self):
+        return self._completed
+    
+    def _on_complete(self):
+        self._completed = True
+        self.remove_me()
+    
+class ActionSequence(ActionType, TimerNode, Queue):
+    def __init__(self, actions: list[ActionType], **kwargs):
+        Queue.__init__(self)
+        for action in actions:
+            self.put(action)
+        auto_start = kwargs.pop("auto_start", True)
+        timer_kwargs = {
+            "interval": 0.,
+            "remove_on_complete": kwargs.pop("remove_on_complete", True),
+            "auto_start": False,
+        }
+        TimerNode.__init__(self, **timer_kwargs)
+        self._head = None
+        if auto_start:
+            self.start()
+    
+    def _complete(self):
+        if self.on_complete:
+            self.on_complete()
+        if self.remove_on_complete:
+            self.remove_me()
+        self._completed = True
+        self._running = False
+
+    @override
+    def step(self, delta: float):
+        if not self._running or (self.empty() and not self._head):
+            return
+        if self._head is not None:
+            self._head.step(delta)
+            if self._head.completed:
+                if self.empty():
+                    self._complete()
+                else:
+                    self._head = None 
+        else:
+            self._head = self.get()
+            self._head.start()
+    
+    @override
+    def reset(self):
+        raise NotImplementedError("ActionSequence cannot be reset")
+    
+    @override
+    def start(self):
+        if self._running:
+            raise RuntimeError("ActionSequence is already running")
+        if self.empty():
+            raise RuntimeError("ActionSequence is empty")
+        self._running = True
+        self._completed = False
+        self._head = None
+    
+    @override
+    def stop(self):
+        self._complete()
 
 @dataclass
 class Actor2D(Actor):

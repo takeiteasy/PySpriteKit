@@ -52,11 +52,15 @@ class TestScene(sk.Scene):
                                         width=50,
                                         height=50,
                                         color=sk.Color(.5, .5, 0)))
-        self.add_child(sk.ActionNode(name="poo",
-                                     target=250.,
-                                     easing_fn=sk.ease_bounce_in_out,
-                                     field="position.y",
-                                     actor=self.find_child("poo")))
+        self.add_child(sk.ActionSequence([sk.ActionNode(target=250.,
+                                                        easing_fn=sk.ease_bounce_in_out,
+                                                        field="position.y",
+                                                        actor=self.find_child("poo")),
+                                          sk.WaitAction(duration=1.),
+                                          sk.ActionNode(target=0.,
+                                                        easing_fn=sk.ease_bounce_in_out,
+                                                        field="position.y",
+                                                        actor=self.find_child("poo"))]))
         self.add_stuff()
 
     @override
