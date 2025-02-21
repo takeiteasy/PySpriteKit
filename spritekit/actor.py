@@ -93,7 +93,7 @@ class Actor(ActorType, ActorParent):
             child.draw()
 
 @dataclass
-class BaseTimerActor(Actor):
+class BaseTimer(Actor):
     interval: float = 1.
     repeat: bool = False
     on_complete: Callable[[], None] = None
@@ -102,9 +102,9 @@ class BaseTimerActor(Actor):
     remove_on_complete: Optional[bool] = None 
     cursor: Optional[float] = None
 
-class TimerActor(BaseTimerActor):
+class TimerNode(BaseTimer):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        BaseTimer.__init__(self, **kwargs)
         self._running = self.auto_start
         if not self.cursor:
             self.cursor = self.interval if self._running else 0
@@ -148,11 +148,8 @@ class TimerActor(BaseTimerActor):
     def resume(self):
         self._running = True
 
-class TimerNode(TimerActor):
-    pass
-
 @dataclass
-class ActionActor(TimerActor):
+class ActionNode(TimerNode):
     easing_fn: Callable[[float, float, float, float], float] = staticmethod(ease_linear_in_out)
     actor: Actor = None
     field: str = None
@@ -163,7 +160,7 @@ class ActionActor(TimerActor):
             "interval": kwargs.pop("interval", 1.),
             "cursor": kwargs.pop("cursor", None),
         }
-        TimerActor.__init__(self, **new_kwargs)
+        TimerNode.__init__(self, **new_kwargs)
         self.actor = kwargs.pop("actor", None)
         self.field = kwargs.pop("field", None)
         self.target = kwargs.pop("target", None)
@@ -214,9 +211,6 @@ class ActionActor(TimerActor):
             else:
                 obj = getattr(obj, self.field[i])
 
-class ActionNode(ActionActor):
-    pass
-
 @dataclass
 class Actor2D(Actor):
     position: Vector2 = field(default_factory=Vector2)
@@ -244,7 +238,7 @@ class ShapeActor2D(Actor2D):
             self.__class__.draw_func(*args, **kwargs)
 
 @dataclass
-class LineActor2D(ShapeActor2D, BaseShape):
+class Line2DNode(ShapeActor2D, BaseShape):
     draw_func = rl.DrawLine
     draw_wire_func = rl.DrawLine
     end: Vector2 = field(default_factory=Vector2)
@@ -254,7 +248,7 @@ class LineActor2D(ShapeActor2D, BaseShape):
         self._draw(self.position.x, self.position.y, self.end.x, self.end.y, self.color)
 
 @dataclass
-class RectangleActor2D(ShapeActor2D, BaseShape):
+class RectangleNode(ShapeActor2D, BaseShape):
     draw_func = rl.DrawRectangleRec
     draw_wire_func = rl.DrawRectangleLinesEx
     width: float = 1.
@@ -269,7 +263,7 @@ class RectangleActor2D(ShapeActor2D, BaseShape):
             self._draw(rec, self.color)
 
 @dataclass
-class CircleActor2D(ShapeActor2D, BaseShape):
+class CircleNode(ShapeActor2D, BaseShape):
     draw_func = rl.DrawCircle
     draw_wire_func = rl.DrawCircleLines
     radius: float = 1.
@@ -279,7 +273,7 @@ class CircleActor2D(ShapeActor2D, BaseShape):
         self._draw(int(self.position.x), int(self.position.y), self.radius, self.color)
 
 @dataclass
-class TriangleActor2D(ShapeActor2D, BaseShape):
+class TriangleNode(ShapeActor2D, BaseShape):
     draw_func = rl.DrawTriangle
     draw_wire_func = rl.DrawTriangleLines
     position2: Vector2 = field(default_factory=Vector2)
@@ -296,7 +290,7 @@ class TriangleActor2D(ShapeActor2D, BaseShape):
         self._draw([*stri[0]], [*stri[1]], [*stri[2]], self.color)
 
 @dataclass
-class EllipseActor2D(ShapeActor2D, BaseShape):
+class EllipseNode(ShapeActor2D, BaseShape):
     draw_func = rl.DrawEllipse
     draw_wire_func = rl.DrawEllipseLines
     width: float = 1.
@@ -307,7 +301,7 @@ class EllipseActor2D(ShapeActor2D, BaseShape):
         self._draw(self.position.x, self.position.y, self.width, self.height, self.color)
 
 @dataclass
-class SpriteActor2D(Actor2D):
+class SpriteNode(Actor2D):
     texture: r.Texture2D = None
     source: r.Rectangle = r.Rectangle(0, 0, 0, 0)
     dst: r.Rectangle = r.Rectangle(0, 0, 0, 0)
@@ -335,7 +329,7 @@ class SpriteActor2D(Actor2D):
                            [*(-self._offset() * self.scale)], self.rotation, self.color)
 
 @dataclass
-class LabelActor2D(Actor2D):
+class LabelNode(Actor2D):
     text: str = ""
     font: r.Font = None
     font_size: float = 16.
@@ -368,27 +362,6 @@ class LabelActor2D(Actor2D):
         if not self.font:
             self.font = r.get_font_default()
         r.draw_text_pro(self.font, self.text.encode('utf-8'), [0,0], [*-self._offset()], self.rotation, self.font_size, self.spacing, self.color)
-
-class Line2DNode(LineActor2D):
-    pass
-
-class RectangleNode(RectangleActor2D):
-    pass
-
-class CircleNode(CircleActor2D):
-    pass
-
-class TriangleNode(TriangleActor2D):
-    pass
-
-class EllipseNode(EllipseActor2D):
-    pass
-
-class SpriteNode(SpriteActor2D):
-    pass
-
-class LabelNode(LabelActor2D):
-    pass
 
 class AudioActor(Actor):
     volume: float = 1.
@@ -450,7 +423,7 @@ class AudioActor(Actor):
                 self.pause()
 
 @dataclass
-class SoundActor(AudioActor):
+class SoundNode(AudioActor):
     sound: r.Sound = None
     play_func = r.play_sound
     stop_func = r.stop_sound
@@ -466,7 +439,7 @@ class SoundActor(AudioActor):
         return self.sound
 
 @dataclass
-class MusicActor(AudioActor):
+class MusicNode(AudioActor):
     music: r.Music = None
     loop: bool = False
     autostart: bool = False
@@ -521,9 +494,3 @@ class MusicActor(AudioActor):
         if not self.playing:
             self.position = 0
             self.play()
-
-class MusicNode(MusicActor):
-    pass
-
-class SoundNode(SoundActor):
-    pass
