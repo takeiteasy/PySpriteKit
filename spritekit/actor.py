@@ -155,16 +155,36 @@ class TimerNode(TimerActor):
 class ActionActor(TimerActor):
     easing_fn: Callable[[float, float, float, float], float] = staticmethod(ease_linear_in_out)
     actor: Actor = None
+    field: str = None
+    target: any = None
 
     def __init__(self, **kwargs):
         new_kwargs = {
-            "interval": kwargs.pop("duration", 1.),
+            "interval": kwargs.pop("interval", 1.),
             "cursor": kwargs.pop("cursor", None),
         }
         TimerActor.__init__(self, **new_kwargs)
         self.actor = kwargs.pop("actor", None)
+        self.field = kwargs.pop("field", None)
+        self.target = kwargs.pop("target", None)
         if not self.actor:
             raise RuntimeError("Actor is not set")
+        if not self.field:
+            raise RuntimeError("Field is not set")
+        self.field = self.field.split(".") if "." in self.field else [self.field]
+        obj = self.actor
+        for i in range(len(self.field)):
+            if i == len(self.field) - 1:
+                f = getattr(obj, self.field[i])
+                if f is None:
+                    raise RuntimeError(f"Object has no field {self.field[i]}")
+                if not isinstance(f, type(self.target)):
+                    raise RuntimeError(f"Field {self.field[i]} is not of type {type(self.target)}")
+                self._start = f
+            else:
+                if not hasattr(obj, self.field[i]):
+                    raise RuntimeError(f"Object has no field {self.field[i]}")
+                obj = getattr(obj, self.field[i])
         if "easing_fn" in kwargs:
             self.easing_fn = staticmethod(kwargs.pop("easing_fn"))
         self.on_complete = self._remove_me
@@ -173,27 +193,29 @@ class ActionActor(TimerActor):
     def _remove_me(self):
         if self.scene:
             self.scene.remove_child(self)
-
-    def _step(self, delta: float):
-        pass
-
-@dataclass
-class MoveToNode(ActionActor):
-    target: Vector2 = field(default_factory=Vector2)
-    start: Vector2 = field(default_factory=Vector2)
-
-    def __init__(self, **kwargs):
-        self.target = kwargs.pop("target")
-        super().__init__(**kwargs)
-        if not hasattr(self.actor, "position"):
-            raise RuntimeError("Actor has no position")
-        self.start = Vector2(self.actor.position)
     
     def _step(self, delta: float):
         elapsed = self.interval - self.cursor
-        x = self.easing_fn(elapsed, self.start.x, self.target.x - self.start.x, self.interval)
-        y = self.easing_fn(elapsed, self.start.y, self.target.y - self.start.y, self.interval)
-        self.actor.position = Vector2([x, y])
+        delta = self.target - self._start
+        obj = self.actor
+        for i in range(len(self.field)):
+            if i == len(self.field) - 1:
+                def fn(x, y, z, w):
+                    return self.easing_fn(x, y, z, w)
+                f = getattr(obj, self.field[i])
+                if isinstance(f, float):
+                    setattr(obj, self.field[i], fn(elapsed, self._start, delta, self.interval))
+                else:
+                    z = list(zip(self._start, delta))
+                    for start, delta in z:
+                        print(start, delta)
+                    v = [fn(elapsed, start, delta, self.interval) for start, delta in z]
+                    setattr(obj, self.field[i], v)
+            else:
+                obj = getattr(obj, self.field[i])
+
+class ActionNode(ActionActor):
+    pass
 
 @dataclass
 class Actor2D(Actor):
