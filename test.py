@@ -48,6 +48,14 @@ class TestScene(sk.Scene):
                                     interval=1.,
                                     repeat=True,
                                     on_complete=lambda: self.add_circle()))
+        self.add_child(sk.RectangleNode(name="poo",
+                                        width=50,
+                                        height=50,
+                                        color=sk.Color(.5, .5, 0)))
+        self.add_child(sk.MoveToNode(name="poo",
+                                     target=sk.Vector2([250, 250]),
+                                     easing_fn=sk.ease_bounce_in_out,
+                                     actor=self.find_child("poo")))
         self.add_stuff()
 
     @override

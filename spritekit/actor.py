@@ -31,7 +31,7 @@ class ActorParent:
     def _add_child(self, node: ActorType):
         if not hasattr(self, '_children'):
             self._children = []
-        self._children.append(node)
+        self._children.insert(0, node)
 
     def add_child(self, node: ActorType):
         self._add_child(node)
@@ -45,6 +45,11 @@ class ActorParent:
             return []
         return [x for x in self._children if x.name == name]
     
+    def find_child(self, name: Optional[str] = ""):
+        for child in self.find_children(name):
+            return child
+        return None
+    
     def all_children(self):
         return self._children if hasattr(self, '_children') else []
     
@@ -56,7 +61,10 @@ class ActorParent:
         if isinstance(child, str):
             self.remove_children(name=child)
         else:
-            self._children.remove(child)
+            for i in range(len(self._children)):
+                if self._children[i] == child:
+                    self._children.pop(i)
+                    return
 
     def remove_children(self, name: Optional[str] = ""):
         self._children = [x for x in (self._children if hasattr(self, '_children') else []) if x.name != name]
@@ -85,48 +93,54 @@ class Actor(ActorType, ActorParent):
             child.draw()
 
 @dataclass
-class TimerActor(Actor):
+class BaseTimerActor(Actor):
     interval: float = 1.
     repeat: bool = False
     on_complete: Callable[[], None] = None
+    on_tick: Callable[[float], None] = None
     auto_start: bool = True
     remove_on_complete: Optional[bool] = None 
-    position: Optional[float] = None
+    cursor: Optional[float] = None
 
-    def __post_init__(self):
+class TimerActor(BaseTimerActor):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self._running = self.auto_start
-        if not self.position:
-            self.position = self.interval if self._running else 0
+        if not self.cursor:
+            self.cursor = self.interval if self._running else 0
         if not self.remove_on_complete:
             self.remove_on_complete = not self.repeat
 
     def step(self, delta: float):
         if not self._running:
             return
-        if self.position > 0:
-            self.position -= delta
-            if self.position <= 0:
+        if self.cursor > 0:
+            self.cursor -= delta
+            if self.cursor <= 0:
                 if self.repeat:
-                    self.position = self.interval
+                    self.cursor = self.interval
                 else:
-                    self.position = 0
+                    self.cursor = 0
                     self._running = False
                 if self.on_complete:
                     self.on_complete()
                 if self.remove_on_complete:
                     if self.scene:
                         self.scene.remove_child(self)
+            else:
+                if self.on_tick:
+                    self.on_tick(self.cursor)
     
     def reset(self):
-        self.position = self.interval
+        self.cursor = self.interval
     
     def start(self):
         self._running = True
-        self.position = self.interval
+        self.cursor = self.interval
     
     def stop(self):
         self._running = False
-        self.position = 0
+        self.cursor = 0
     
     def pause(self):
         self._running = False
@@ -136,6 +150,50 @@ class TimerActor(Actor):
 
 class TimerNode(TimerActor):
     pass
+
+@dataclass
+class ActionActor(TimerActor):
+    easing_fn: Callable[[float, float, float, float], float] = staticmethod(ease_linear_in_out)
+    actor: Actor = None
+
+    def __init__(self, **kwargs):
+        new_kwargs = {
+            "interval": kwargs.pop("duration", 1.),
+            "cursor": kwargs.pop("cursor", None),
+        }
+        TimerActor.__init__(self, **new_kwargs)
+        self.actor = kwargs.pop("actor", None)
+        if not self.actor:
+            raise RuntimeError("Actor is not set")
+        if "easing_fn" in kwargs:
+            self.easing_fn = staticmethod(kwargs.pop("easing_fn"))
+        self.on_complete = self._remove_me
+        self.on_tick = self._step
+    
+    def _remove_me(self):
+        if self.scene:
+            self.scene.remove_child(self)
+
+    def _step(self, delta: float):
+        pass
+
+@dataclass
+class MoveToNode(ActionActor):
+    target: Vector2 = field(default_factory=Vector2)
+    start: Vector2 = field(default_factory=Vector2)
+
+    def __init__(self, **kwargs):
+        self.target = kwargs.pop("target")
+        super().__init__(**kwargs)
+        if not hasattr(self.actor, "position"):
+            raise RuntimeError("Actor has no position")
+        self.start = Vector2(self.actor.position)
+    
+    def _step(self, delta: float):
+        elapsed = self.interval - self.cursor
+        x = self.easing_fn(elapsed, self.start.x, self.target.x - self.start.x, self.interval)
+        y = self.easing_fn(elapsed, self.start.y, self.target.y - self.start.y, self.interval)
+        self.actor.position = Vector2([x, y])
 
 @dataclass
 class Actor2D(Actor):
