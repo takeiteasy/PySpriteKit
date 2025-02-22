@@ -17,11 +17,10 @@
 
 import pyray as r
 import raylib as rl
-from pyglsl import VertexStage, FragmentStage
 import os
 import pathlib
 
-__all__ = ["Image", "Texture", "Shader", "CompileShader", "Model", "Wave", "Sound", "Music", "Font", "Keys", "Flags", "Keyboard", "Gamepad", "Mouse", "Color", "Rectangle", "unload_cache"]
+__all__ = ["Image", "Texture", "Shader", "ShaderFromMemory", "Model", "Wave", "Sound", "Music", "Font", "Keys", "Flags", "Keyboard", "Gamepad", "Mouse", "Color", "Rectangle", "unload_cache"]
 
 __SKPATH__ = pathlib.Path(__file__).parent
 __SKDATA__ = "assets"
@@ -109,9 +108,8 @@ def Shader(vertex_file: str, fragment_file: str):
     return r.load_shader(find_file(vertex_file, __vshader_extensions, _file_locations('shaders')),
                          find_file(fragment_file, __fshader_extensions, _file_locations('shaders')))
 
-def CompileShader(vertex: str | VertexStage, fragment: str | FragmentStage):
-    return r.load_shader_from_memory(vertex.compile() if isinstance(vertex, VertexStage) else vertex,
-                                     fragment.compile() if isinstance(fragment, FragmentStage) else fragment)
+def ShaderFromMemory(vertex: str, fragment: str):
+    return r.load_shader_from_memory(vertex, fragment)
 
 @cache_result
 def Model(file: str):
