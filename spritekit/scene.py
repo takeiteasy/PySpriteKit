@@ -20,6 +20,8 @@ from .fsm import FiniteStateMachine
 import pyray as r
 from typing import override
 
+__all__ = ["Scene", "main_scene"]
+
 __scene__ = []
 __next_scene = None
 __drop_scene = None

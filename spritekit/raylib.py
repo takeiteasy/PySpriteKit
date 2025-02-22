@@ -21,6 +21,8 @@ from pyglsl import VertexStage, FragmentStage
 import os
 import pathlib
 
+__all__ = ["Image", "Texture", "Shader", "CompileShader", "Model", "Wave", "Sound", "Music", "Font", "Keys", "Flags", "Keyboard", "Gamepad", "Mouse", "Color", "Rectangle", "unload_cache"]
+
 __SKPATH__ = pathlib.Path(__file__).parent
 __SKDATA__ = "assets"
 

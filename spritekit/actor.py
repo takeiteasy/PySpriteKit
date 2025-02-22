@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .vector import Vector2
+from .math import Vector2
 from dataclasses import dataclass, field
 from typing import Optional, override, Callable, Type
 from raylib.colors import *
@@ -24,6 +24,10 @@ import pyray as r
 from .easing import ease_linear_in_out
 from contextlib import contextmanager
 from queue import Queue
+
+__all__ = ["Line2DNode", "RectangleNode", "CircleNode", "TriangleNode", "EllipseNode", "SpriteNode",
+           "LabelNode", "MusicNode", "SoundNode", "TimerNode", "ActionNode", "ActionSequence",
+           "WaitAction", "EmitterNode"]
 
 class ActorType:
     pass

@@ -15,7 +15,7 @@
 - Audio (music, sound effects)
 - Scene management
 - Actor framework
-- Linear algebra (vector, matrix, quaternion, taken from [Pyrr](https://github.com/adamlwgriffiths/Pyrr))
+- Linear algebra (vector2,3,4, matrix4, taken from [Pyrr](https://github.com/adamlwgriffiths/Pyrr))
 - Easing functions (taken from [raylib-py](https://github.com/overdev/raylib-py/blob/master/src/raylibpy/easings.py))
 - Finite state machine (build on top of [transitions](https://github.com/pytransitions/transitions))
 - Action framework
