@@ -19,6 +19,7 @@ from .actor import ActorType, ActorParent
 from .fsm import FiniteStateMachine
 import pyray as r
 from typing import override
+import atexit
 
 __all__ = ["Scene", "main_scene"]
 
@@ -111,6 +112,14 @@ class Scene(FiniteStateMachine, ActorParent):
         if __next_scene is None:
             raise RuntimeError("No next scene queued")
         return __scene__[0]
+    
+    @property
+    def width(self):
+        return r.get_screen_width()
+    
+    @property
+    def height(self):
+        return r.get_screen_height()
 
 def main_scene(cls):
     global __scene__, __drop_scene, __next_scene
@@ -121,6 +130,10 @@ def main_scene(cls):
                   cls.config['title'] if "title" in cls.config else "spritekit")
     r.set_config_flags(cls.config['flags'] if "flags" in cls.config else r.ConfigFlags.FLAG_WINDOW_RESIZABLE)
     r.init_audio_device()
+    def cleanup():
+        r.close_audio_device()
+        r.close_window()
+    atexit.register(cleanup)
     if "fps" in cls.config:
         r.set_target_fps(cls.config['fps'])
     if "exit_key" in cls.config:
@@ -164,3 +177,4 @@ def main_scene(cls):
             else:
                 raise RuntimeError("Invalid Scene")
     return cls
+

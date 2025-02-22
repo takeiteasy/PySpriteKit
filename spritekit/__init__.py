@@ -21,4 +21,3 @@ from .scene import *
 from .fsm import *
 from .actor import *
 from .raylib import *
-from .physics import *

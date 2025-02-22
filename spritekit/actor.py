@@ -24,7 +24,7 @@ from .easing import ease_linear_in_out
 from contextlib import contextmanager
 from queue import Queue
 
-__all__ = ["Line2DNode", "RectangleNode", "CircleNode", "TriangleNode", "EllipseNode", "SpriteNode",
+__all__ = ["LineNode", "RectangleNode", "CircleNode", "TriangleNode", "EllipseNode", "SpriteNode",
            "LabelNode", "MusicNode", "SoundNode", "TimerNode", "ActionNode", "ActionSequence",
            "WaitAction", "EmitterNode"]
 
@@ -379,13 +379,13 @@ class Actor2D(Actor):
 
     def _offset(self):
         return self.position + self.origin * Vector2([-self.width, -self.height])
-
-class BaseShape:
+    
+class BaseShape(Actor2D):
     draw_func = None
     draw_wire_func = None
 
 @dataclass
-class ShapeActor2D(BaseShape, Actor2D):
+class ShapeActor(BaseShape):
     wireframe: bool = False
     line_thickness: float = 1.
 
@@ -396,7 +396,7 @@ class ShapeActor2D(BaseShape, Actor2D):
             self.__class__.draw_func(*args, **kwargs)
 
 @dataclass
-class Line2DNode(ShapeActor2D):
+class LineNode(ShapeActor):
     draw_func = rl.DrawLine
     draw_wire_func = rl.DrawLine
     end: Vector2 = field(default_factory=Vector2)
@@ -406,7 +406,7 @@ class Line2DNode(ShapeActor2D):
         self._draw(self.position.x, self.position.y, self.end.x, self.end.y, self.color)
 
 @dataclass
-class RectangleNode(ShapeActor2D):
+class RectangleNode(ShapeActor):
     draw_func = rl.DrawRectangleRec
     draw_wire_func = rl.DrawRectangleLinesEx
     width: float = 1.
@@ -421,7 +421,7 @@ class RectangleNode(ShapeActor2D):
             self._draw(rec, self.color)
 
 @dataclass
-class CircleNode(ShapeActor2D):
+class CircleNode(ShapeActor):
     draw_func = rl.DrawCircle
     draw_wire_func = rl.DrawCircleLines
     radius: float = 1.
@@ -431,7 +431,7 @@ class CircleNode(ShapeActor2D):
         self._draw(int(self.position.x), int(self.position.y), self.radius, self.color)
 
 @dataclass
-class TriangleNode(ShapeActor2D):
+class TriangleNode(ShapeActor):
     draw_func = rl.DrawTriangle
     draw_wire_func = rl.DrawTriangleLines
     position2: Vector2 = field(default_factory=Vector2)
@@ -448,7 +448,7 @@ class TriangleNode(ShapeActor2D):
         self._draw([*stri[0]], [*stri[1]], [*stri[2]], self.color)
 
 @dataclass
-class EllipseNode(ShapeActor2D):
+class EllipseNode(ShapeActor):
     draw_func = rl.DrawEllipse
     draw_wire_func = rl.DrawEllipseLines
     width: float = 1.
@@ -459,7 +459,7 @@ class EllipseNode(ShapeActor2D):
         self._draw(self.position.x, self.position.y, self.width, self.height, self.color)
 
 @dataclass
-class SpriteNode(Actor2D):
+class SpriteNode(ShapeActor):
     texture: r.Texture = None
     source: r.Rectangle = r.Rectangle(0, 0, 0, 0)
     dst: r.Rectangle = r.Rectangle(0, 0, 0, 0)
@@ -487,7 +487,7 @@ class SpriteNode(Actor2D):
                            [*(-self._offset() * self.scale)], self.rotation, self.color)
 
 @dataclass
-class LabelNode(Actor2D):
+class LabelNode(ShapeActor):
     text: str = ""
     font: r.Font = None
     font_size: float = 16.
