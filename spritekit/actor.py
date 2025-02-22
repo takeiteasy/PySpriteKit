@@ -17,7 +17,7 @@
 
 from .vector import Vector2
 from dataclasses import dataclass, field
-from typing import Optional, override, Callable
+from typing import Optional, override, Callable, Type
 from raylib.colors import *
 import raylib as rl
 import pyray as r
@@ -100,7 +100,7 @@ class Actor(ActorType, ActorParent):
 @dataclass
 class BaseTimer(Actor):
     interval: float = 1.
-    repeat: bool = False
+    repeat: bool | int = None 
     on_complete: Callable[[], None] = None
     on_tick: Callable[[float], None] = None
     auto_start: bool = True
@@ -112,10 +112,23 @@ class TimerNode(BaseTimer):
         BaseTimer.__init__(self, **kwargs)
         self._completed = False
         self._running = self.auto_start
+        if self.repeat is None:
+            self.repeat = False
+        elif isinstance(self.repeat, bool):
+            pass
+        elif isinstance(self.repeat, int):
+            if self.repeat <= 0:
+                self.repeat = False
+        self._initial_repeat = self.repeat
         if not self.cursor:
             self.cursor = self.interval if self._running else 0
         if not self.remove_on_complete:
-            self.remove_on_complete = not self.repeat
+            if isinstance(self.repeat, bool):
+                self.remove_on_complete = not self.repeat
+            elif isinstance(self.repeat, int):
+                self.remove_on_complete = self.repeat > 0
+            else:
+                self.remove_on_complete = False
 
     def step(self, delta: float):
         if not self._running:
@@ -123,23 +136,32 @@ class TimerNode(BaseTimer):
         if self.cursor > 0:
             self.cursor -= delta
             if self.cursor <= 0:
-                if self.repeat:
-                    self.cursor = self.interval
-                else:
-                    self.cursor = 0
-                    self._running = False
-                    self._completed = True
+                self.cursor = 0
+                self._running = False
+                self._completed = True
                 if self.on_complete:
                     self.on_complete()
                 if self.remove_on_complete:
                     self.remove_me()
+                if self.repeat is not None:
+                    self.cursor = self.interval
+                    if isinstance(self.repeat, bool):
+                        if self.repeat:
+                            self.reset()
+                    elif isinstance(self.repeat, int):
+                        if self.repeat > 0:
+                            self.repeat -= 1
+                            self.reset()
             else:
                 if self.on_tick:
                     self.on_tick(self.cursor)
     
     def reset(self):
         self._completed = False
+        self.repeat = self._initial_repeat
         self.cursor = self.interval
+        if self.auto_start:
+            self.start()
     
     def start(self):
         if not self._running:
@@ -321,13 +343,22 @@ class ActionSequence(ActionType, TimerNode, Queue):
         self._complete()
 
 class EmitterNode(TimerNode):
-    def __init__(self, emit: Callable[[], Actor], interval: float = 1., auto_start: bool = True):
-        self._emit = staticmethod(emit)
+    def __init__(self, emit: Callable[[], Actor] | tuple[Type[Actor], dict] = None,  interval: float = 1., auto_start: bool = True):
+        if callable(emit):
+            self._emit = staticmethod(emit)
+        else:
+            self._type = emit[0]
+            self._args = emit[1]
+            self._emit = staticmethod(self._emit_type)
         TimerNode.__init__(self, 
                            interval=interval,
                            auto_start=auto_start,
                            repeat=True,
-                           on_complete=self._fire)
+                           on_complete=self._fire,
+                           remove_on_complete=False)
+    
+    def _emit_type(self):
+        return self._type(**self._args)
     
     def _fire(self):
         if hasattr(self, "scene") and self.scene is not None:
@@ -564,7 +595,7 @@ class SoundNode(AudioActor):
 class MusicNode(AudioActor):
     music: r.Music = None
     loop: bool = False
-    autostart: bool = False
+    auto_start: bool = False
     play_func = r.play_music_stream
     stop_func = r.stop_music_stream
     pause_func = r.pause_music_stream
@@ -579,13 +610,13 @@ class MusicNode(AudioActor):
         return self.music
 
     def __init__(self, **kwargs):
-        hax = ["music", "loop", "autostart"]
+        hax = ["music", "loop", "auto_start"]
         a = {a: kwargs[a] for a in kwargs if not a in hax}
         for k in hax:
             if k in kwargs:
                 self.__dict__[k] = kwargs[k]
         super().__init__(**a)
-        if self.autostart:
+        if self.auto_start:
             self.play()
 
     def seek(self, position: float):

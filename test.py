@@ -43,7 +43,7 @@ class TestScene(sk.Scene):
                                     color=sk.Color(1., 0., 1.)))
         self.add_child(sk.MusicNode(name="bg",
                                     music=sk.Music(f"assets/audio/country.mp3"),
-                                    autostart=True))
+                                    auto_start=True))
         self.add_child(sk.EmitterNode(emit=self.add_circle,
                                       interval=1.))
         self.add_child(sk.RectangleNode(name="poo",
@@ -61,6 +61,11 @@ class TestScene(sk.Scene):
                                                         field="position.y",
                                                         actor=self.find_child("poo"))],
                                          repeat=True))
+        self.add_child(sk.EmitterNode(emit=(sk.CircleNode,
+                                            {'name': 'test',
+                                             'radius': 25,
+                                             'color': sk.Color(1., 1., 0.)}),
+                                      interval=.5))
         self.add_stuff()
 
     @override
