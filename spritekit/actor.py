@@ -17,8 +17,7 @@
 
 from .math import Vector2
 from dataclasses import dataclass, field
-from typing import Optional, override, Callable, Type
-from raylib.colors import *
+from typing import Optional, override, Callable, Type, Any
 import raylib as rl
 import pyray as r
 from .easing import ease_linear_in_out
@@ -49,20 +48,20 @@ class ActorParent:
         if not hasattr(self, '_children'):
             return []
         return [x for x in self._children if x.name == name]
-    
+
     def find_child(self, name: Optional[str] = ""):
         for child in self.find_children(name):
             return child
         return None
-    
+
     def all_children(self):
         return self._children if hasattr(self, '_children') else []
-    
+
     def children(self, name: Optional[str] = ""):
         for child in self.find_children(name):
             yield child
-    
-    def remove_child(self, child: str | ActorType = None):
+
+    def remove_child(self, child: Optional[str | ActorType] = None):
         if isinstance(child, str):
             self.remove_children(name=child)
         else:
@@ -83,12 +82,12 @@ class Actor(ActorType, ActorParent):
 
     def __str__(self):
         return f"(Node({self.__class__.__name__}) {" ".join([f"{key}:{getattr(self, key)}" for key in list(vars(self).keys())])})"
-    
+
     @override
     def add_child(self, node: ActorType):
         node.parent = self
         self._add_child(node)
-    
+
     def remove_me(self):
         if hasattr(self, "scene") and self.scene is not None:
             self.scene.remove_child(self)
@@ -103,12 +102,12 @@ class Actor(ActorType, ActorParent):
 
 @dataclass
 class BaseTimer(Actor):
-    interval: float = 1.
-    repeat: bool | int = None 
-    on_complete: Callable[[], None] = None
-    on_tick: Callable[[float], None] = None
+    duration: float = 1.
+    repeat: Optional[bool | int] = None
+    on_complete: Optional[Callable[[], None]] = None
+    on_tick: Optional[Callable[[float], None]] = None
     auto_start: bool = True
-    remove_on_complete: Optional[bool] = None 
+    remove_on_complete: Optional[bool] = None
     cursor: Optional[float] = None
 
 class TimerNode(BaseTimer):
@@ -124,8 +123,8 @@ class TimerNode(BaseTimer):
             if self.repeat <= 0:
                 self.repeat = False
         self._initial_repeat = self.repeat
-        if not self.cursor:
-            self.cursor = self.interval if self._running else 0
+        if self.cursor is None:
+            self.cursor = self.duration if self._running else 0
         if not self.remove_on_complete:
             if isinstance(self.repeat, bool):
                 self.remove_on_complete = not self.repeat
@@ -137,7 +136,7 @@ class TimerNode(BaseTimer):
     def step(self, delta: float):
         if not self._running:
             return
-        if self.cursor > 0:
+        if self.cursor is not None and self.cursor > 0:
             self.cursor -= delta
             if self.cursor <= 0:
                 self.cursor = 0
@@ -148,7 +147,7 @@ class TimerNode(BaseTimer):
                 if self.remove_on_complete:
                     self.remove_me()
                 if self.repeat is not None:
-                    self.cursor = self.interval
+                    self.cursor = self.duration
                     if isinstance(self.repeat, bool):
                         if self.repeat:
                             self.reset()
@@ -159,25 +158,25 @@ class TimerNode(BaseTimer):
             else:
                 if self.on_tick:
                     self.on_tick(self.cursor)
-    
+
     def reset(self):
         self._completed = False
         self.repeat = self._initial_repeat
-        self.cursor = self.interval
+        self.cursor = self.duration
         if self.auto_start:
             self.start()
-    
+
     def start(self):
         if not self._running:
             self._running = True
             self._completed = False
-            self.cursor = self.interval
-    
+            self.cursor = self.duration
+
     def stop(self):
         self._running = False
         self._completed = True
         self.cursor = 0
-    
+
     def pause(self):
         if not self._completed:
             self._running = False
@@ -192,13 +191,15 @@ class ActionType:
 @dataclass
 class ActionNode(ActionType, TimerNode):
     easing_fn: Callable[[float, float, float, float], float] = staticmethod(ease_linear_in_out)
-    actor: Actor = None
-    field: str = None
-    target: any = None
+    actor: Optional[Actor] = None
+    field: Optional[str | list[str]] = None
+    target: Any = None
 
     @contextmanager
     def _initial_value(self):
         obj = self.actor
+        if self.field is None:
+            return None
         for i in range(len(self.field)):
             if i == len(self.field) - 1:
                 f = getattr(obj, self.field[i])
@@ -214,7 +215,7 @@ class ActionNode(ActionType, TimerNode):
 
     def __init__(self, **kwargs):
         new_kwargs = {
-            "interval": kwargs.pop("interval", 1.),
+            "duration": kwargs.pop("duration", 1.),
             "cursor": kwargs.pop("cursor", None),
         }
         TimerNode.__init__(self, **new_kwargs)
@@ -227,7 +228,7 @@ class ActionNode(ActionType, TimerNode):
             raise RuntimeError("Field is not set")
         if self.target is None:
             raise RuntimeError("Target is not set")
-        self.field = self.field.split(".") if "." in self.field else [self.field]
+        self.field = self.field if isinstance(self.field, list) else self.field.split(".") if "." in self.field else [self.field]
         self._initial_value()
         if "easing_fn" in kwargs:
             self.easing_fn = staticmethod(kwargs.pop("easing_fn"))
@@ -238,16 +239,16 @@ class ActionNode(ActionType, TimerNode):
     @property
     def completed(self):
         return self._completed
-    
+
     @property
     def running(self):
         return self._running
-    
+
     def _step(self, delta: float):
         if not self._start:
             with self._initial_value() as start:
                 self._start = start
-        elapsed = self.interval - self.cursor
+        elapsed = self.duration - self.cursor
         delta = self.target - self._start
         obj = self.actor
         for i in range(len(self.field)):
@@ -256,47 +257,47 @@ class ActionNode(ActionType, TimerNode):
                     return self.easing_fn(x, y, z, w)
                 f = getattr(obj, self.field[i])
                 if isinstance(f, float):
-                    setattr(obj, self.field[i], fn(elapsed, self._start, delta, self.interval))
+                    setattr(obj, self.field[i], fn(elapsed, self._start, delta, self.duration))
                 else:
                     z = list(zip(self._start, delta))
                     for start, delta in z:
                         print(start, delta)
-                    v = [fn(elapsed, start, delta, self.interval) for start, delta in z]
+                    v = [fn(elapsed, start, delta, self.duration) for start, delta in z]
                     setattr(obj, self.field[i], v)
             else:
                 obj = getattr(obj, self.field[i])
 
 class WaitAction(ActionType, TimerNode):
-    def __init__(self, duration: float, auto_start: bool = True):
-        TimerNode.__init__(self,
-                           interval=duration,
-                           auto_start=auto_start,
-                           on_complete=staticmethod(self._on_complete))
+    def __init__(self, **kwargs):
+        self._on_complete_usr = kwargs.pop("on_complete", None)
+        TimerNode.__init__(self, on_complete=self._on_complete, **kwargs)
         self._completed = False
-    
+
     @property
     def completed(self):
         return self._completed
-    
+
     def _on_complete(self):
         self._completed = True
+        if self._on_complete_usr:
+            self._on_complete_usr()
         self.remove_me()
-    
+
 class ActionSequence(ActionType, TimerNode, Queue):
-    def __init__(self, actions: list[ActionType], interval: float = 0., auto_start: bool = True, remove_on_complete: bool = True, repeat: bool = False):
+    def __init__(self, actions: list[ActionType], duration: float = 0., auto_start: bool = True, remove_on_complete: bool = True, repeat: bool = False):
         Queue.__init__(self)
         self._actions = actions
         for action in actions:
             self.put(action)
         TimerNode.__init__(self,
-                           interval=interval,
+                           duration=duration,
                            auto_start=auto_start,
                            remove_on_complete=remove_on_complete,
                            repeat=repeat)
         self._head = None
         if auto_start:
             self.start()
-    
+
     def _complete(self):
         self._completed = True
         self._running = False
@@ -319,11 +320,11 @@ class ActionSequence(ActionType, TimerNode, Queue):
                 if self.empty():
                     self._complete()
                 else:
-                    self._head = None 
+                    self._head = None
         else:
             self._head = self.get()
             self._head.start()
-    
+
     @override
     def reset(self):
         self._completed = False
@@ -341,29 +342,29 @@ class ActionSequence(ActionType, TimerNode, Queue):
         self._running = True
         self._completed = False
         self._head = None
-    
+
     @override
     def stop(self):
         self._complete()
 
 class EmitterNode(TimerNode):
-    def __init__(self, emit: Callable[[], Actor] | tuple[Type[Actor], dict] = None,  interval: float = 1., auto_start: bool = True):
+    def __init__(self, emit: Callable[[], Actor] | tuple[Type[Actor], dict] = None,  duration: float = 1., auto_start: bool = True):
         if callable(emit):
             self._emit = staticmethod(emit)
         else:
             self._type = emit[0]
             self._args = emit[1]
             self._emit = staticmethod(self._emit_type)
-        TimerNode.__init__(self, 
-                           interval=interval,
+        TimerNode.__init__(self,
+                           duration=duration,
                            auto_start=auto_start,
                            repeat=True,
                            on_complete=self._fire,
                            remove_on_complete=False)
-    
+
     def _emit_type(self):
         return self._type(**self._args)
-    
+
     def _fire(self):
         if hasattr(self, "scene") and self.scene is not None:
             self.scene.add_child(self._emit())
@@ -374,7 +375,7 @@ class Actor2D(Actor):
     rotation: float = 0.
     scale: float = 1.
     origin: Vector2 = field(default_factory=lambda: Vector2([0.5, 0.5]))
-    color: r.Color = RAYWHITE
+    color: r.Color = r.RAYWHITE
 
     def _offset(self):
         return self.position + self.origin * Vector2([-self.width, -self.height])
@@ -384,7 +385,7 @@ class BaseShape:
     draw_wire_func = None
 
 @dataclass
-class ShapeActor2D(Actor2D):
+class ShapeActor2D(BaseShape, Actor2D):
     wireframe: bool = False
     line_thickness: float = 1.
 
@@ -395,7 +396,7 @@ class ShapeActor2D(Actor2D):
             self.__class__.draw_func(*args, **kwargs)
 
 @dataclass
-class Line2DNode(ShapeActor2D, BaseShape):
+class Line2DNode(ShapeActor2D):
     draw_func = rl.DrawLine
     draw_wire_func = rl.DrawLine
     end: Vector2 = field(default_factory=Vector2)
@@ -405,7 +406,7 @@ class Line2DNode(ShapeActor2D, BaseShape):
         self._draw(self.position.x, self.position.y, self.end.x, self.end.y, self.color)
 
 @dataclass
-class RectangleNode(ShapeActor2D, BaseShape):
+class RectangleNode(ShapeActor2D):
     draw_func = rl.DrawRectangleRec
     draw_wire_func = rl.DrawRectangleLinesEx
     width: float = 1.
@@ -420,7 +421,7 @@ class RectangleNode(ShapeActor2D, BaseShape):
             self._draw(rec, self.color)
 
 @dataclass
-class CircleNode(ShapeActor2D, BaseShape):
+class CircleNode(ShapeActor2D):
     draw_func = rl.DrawCircle
     draw_wire_func = rl.DrawCircleLines
     radius: float = 1.
@@ -430,7 +431,7 @@ class CircleNode(ShapeActor2D, BaseShape):
         self._draw(int(self.position.x), int(self.position.y), self.radius, self.color)
 
 @dataclass
-class TriangleNode(ShapeActor2D, BaseShape):
+class TriangleNode(ShapeActor2D):
     draw_func = rl.DrawTriangle
     draw_wire_func = rl.DrawTriangleLines
     position2: Vector2 = field(default_factory=Vector2)
@@ -447,7 +448,7 @@ class TriangleNode(ShapeActor2D, BaseShape):
         self._draw([*stri[0]], [*stri[1]], [*stri[2]], self.color)
 
 @dataclass
-class EllipseNode(ShapeActor2D, BaseShape):
+class EllipseNode(ShapeActor2D):
     draw_func = rl.DrawEllipse
     draw_wire_func = rl.DrawEllipseLines
     width: float = 1.
@@ -459,7 +460,7 @@ class EllipseNode(ShapeActor2D, BaseShape):
 
 @dataclass
 class SpriteNode(Actor2D):
-    texture: r.Texture2D = None
+    texture: r.Texture = None
     source: r.Rectangle = r.Rectangle(0, 0, 0, 0)
     dst: r.Rectangle = r.Rectangle(0, 0, 0, 0)
     scale: Vector2 = field(default_factory=lambda: Vector2([1., 1.]))
@@ -491,16 +492,16 @@ class LabelNode(Actor2D):
     font: r.Font = None
     font_size: float = 16.
     spacing: float = 2.
-    color: r.Color = RAYWHITE
+    color: r.Color = r.RAYWHITE
 
     def _size(self):
-        size = r.measure_text_ex(self.font, self.text.encode('utf-8'), self.font_size, self.spacing)
+        size = r.measure_text_ex(self.font, self.text, self.font_size, self.spacing)
         if not hasattr(self, '_width'):
             self._width = size.x
         if not hasattr(self, '_height'):
             self._height = size.y
         return size
-    
+
     @property
     def width(self):
         if not hasattr(self, '_width'):
@@ -518,7 +519,7 @@ class LabelNode(Actor2D):
     def draw(self):
         if not self.font:
             self.font = r.get_font_default()
-        r.draw_text_pro(self.font, self.text.encode('utf-8'), [0,0], [*-self._offset()], self.rotation, self.font_size, self.spacing, self.color)
+        r.draw_text_pro(self.font, self.text, [0,0], [*-self._offset()], self.rotation, self.font_size, self.spacing, self.color)
 
 class AudioActor(Actor):
     volume: float = 1.
@@ -564,13 +565,13 @@ class AudioActor(Actor):
     def set_pan(self, pan: float):
         if self.audio:
             self.__class__.set_pan_func(self.audio, max(0., min(pan, 1.)))
-    
+
     @property
     def playing(self):
         if not self.audio:
             return False
         return self.__class__.is_playing_func(self.audio)
-    
+
     @playing.setter
     def playing(self, value: bool):
         if self.audio:
@@ -625,15 +626,15 @@ class MusicNode(AudioActor):
 
     def seek(self, position: float):
         r.seek_music_stream(self.audio, position)
-    
+
     @property
     def length(self):
         return r.get_music_time_length(self.audio)
-    
+
     @property
     def position(self):
         return r.get_music_time_played(self.audio)
-    
+
     @position.setter
     def position(self, value: float):
         r.seek_music_stream(self.audio, value)
@@ -643,7 +644,7 @@ class MusicNode(AudioActor):
             self.pause()
         else:
             self.play()
-    
+
     def step(self, _: float):
         if not self.playing:
             return

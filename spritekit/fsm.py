@@ -26,7 +26,7 @@ __all__ = ["State", "Transition", "FiniteStateMachine"]
 class State:
     name: str | Enum
     on_enter: Optional[Callable[[Any], Any]] = None
-    on_exit: Optional[Callable[[Any], Any]] = None,
+    on_exit: Optional[Callable[[Any], Any]] = None
     ignore_invalid_triggers: Optional[bool] = False
     final: Optional[bool] = False
 
@@ -47,11 +47,11 @@ class Transition:
     before: Optional[str | list[str]] = None
     after: Optional[str | list[str]] = None
     prepare: Optional[str | list[str]] = None
-    kwargs: Optional[dict] = field(default_factory=dict)
+    kwargs: dict = field(default_factory=dict)
 
     def explode(self):
         transition_args = {k: v for k, v in self.__dict__.items() if k != 'kwargs' and v is not None}
-        transition_args.update(self.kwargs)  # unpack kwargs
+        transition_args.update(**self.kwargs)  # unpack kwargs
         return transition_args
 
 class FiniteStateMachine:

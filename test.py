@@ -37,6 +37,9 @@ class TestScene(sk.Scene):
         
     @override
     def enter(self):
+        import spritekit.physics as ph
+        import pyray as r
+        a = ph.PhysicsBody(r.create_physics_body_circle(r.Vector2(100, 100), 45, 10), enabled=False)
         self.add_child(sk.LabelNode(name="tset",
                                     text="Hello, World!",
                                     font_size=24,
@@ -45,7 +48,7 @@ class TestScene(sk.Scene):
                                     music=sk.Music(f"assets/audio/country.mp3"),
                                     auto_start=True))
         self.add_child(sk.EmitterNode(emit=self.add_circle,
-                                      interval=1.))
+                                      duration=1.))
         self.add_child(sk.RectangleNode(name="poo",
                                         width=50,
                                         height=50,
@@ -65,7 +68,7 @@ class TestScene(sk.Scene):
                                             {'name': 'test',
                                              'radius': 25,
                                              'color': sk.Color(1., 1., 0.)}),
-                                      interval=.5))
+                                      duration=.5))
         self.add_stuff()
 
     @override

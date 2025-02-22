@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
- 
+
 from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -25,7 +25,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="spritekit",
-    version="0.0.3",
+    version="0.0.4",
     author="George Watson",
     author_email="gigolo@hotmail.co.uk",
     description="2D scene+actor framework built on top of raylib",

@@ -6,7 +6,7 @@
 2D scene+actor framework built on top of [raylib](https://github.com/raysan5/raylib), based off [SpriteKit](https://developer.apple.com/documentation/spritekit) by Apple.
 
 > [!NOTE]
-> `pip install spritekit==0.0.3`
+> `pip install spritekit==0.0.4`
 
 ### Features
 
@@ -54,7 +54,7 @@ class TestScene(sk.Scene):
                                      texture=sk.Texture(f"assets/textures/LA.png"),
                                      origin=sk.Vector2([1., 1.]),
                                      scale=sk.Vector2([0.5, 0.5])))
-    
+
     @override
     def enter(self):
         self.add_child(sk.LabelNode(name="tset",
@@ -76,7 +76,7 @@ class TestScene(sk.Scene):
         if sk.Keyboard.key_pressed("space"):
             for child in self.find_children("bg"):
                 child.toggle()
-        
+
         for child in self.children("test"):
             child.position.x += 100 * delta
         for child in self.children("tset"):

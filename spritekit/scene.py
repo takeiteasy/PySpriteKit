@@ -33,12 +33,12 @@ class Scene(FiniteStateMachine, ActorParent):
         FiniteStateMachine.__init__(self, **kwargs)
         self.camera = r.Camera2D()
         self.camera.target = 0, 0
-        self.camera.offset = r.get_screen_width() / 2, r.get_screen_height() / 2
+        self.camera.offset = r.Vector2(r.get_screen_width() / 2, r.get_screen_height() / 2)
         self.camera.zoom = 1.
         self.clear_color = r.RAYWHITE
         self.run_in_background = False
         self.assets = {} # TODO: Store and restore assets to __cache in raylib.py
-    
+
     @override
     def add_child(self, node: ActorType):
         if node:
@@ -77,7 +77,7 @@ class Scene(FiniteStateMachine, ActorParent):
     def draw_background(self):
         if self.run_in_background:
             self.draw()
-    
+
     @classmethod
     def push_scene(cls, scene):
         if not isinstance(scene, Scene):
@@ -104,7 +104,7 @@ class Scene(FiniteStateMachine, ActorParent):
         if not __scene__:
             raise RuntimeError("No active Scene")
         return __scene__[-1]
-    
+
     @classmethod
     def main_scene(cls):
         global __next_scene

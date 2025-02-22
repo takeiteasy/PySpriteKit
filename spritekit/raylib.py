@@ -42,7 +42,7 @@ def _gen_file_paths(name, extensions, folders):
             paths.append(__SKDATA__ + os.path.sep + folder + os.path.sep + name + ext)
             paths.append(str(__SKPATH__ / folder / name) + ext)
     return paths
-    
+
 def find_file(name, extensions, folders):
     _, ext = os.path.splitext(name)
     if ext and ext in extensions:
@@ -52,7 +52,7 @@ def find_file(name, extensions, folders):
         print("trying ",file)
         if os.path.isfile(file):
             return file
-    raise Exception(f"file {file} does not exist")
+    raise Exception(f"file {name} does not exist")
 
 def cache_result(func):
     def wrapper(*args, **kwargs):
@@ -189,7 +189,7 @@ class Keyboard:
         Test if key was pressed recently
         """
         return rl.IsKeyPressed(cls._fix_kname(kname) if isinstance(kname, str) else kname)
-    
+
 class Gamepad:
     """
     Handles input from gamepads
@@ -247,19 +247,19 @@ class Mouse:
     """
     @classmethod
     def left_button(cls):
-        return r.is_mouse_button_down(rl.MOUSE_LEFT_BUTTON)
+        return r.is_mouse_button_down(rl.MOUSE_BUTTON_LEFT)
 
     @classmethod
     def right_button(cls):
-        return r.is_mouse_button_down(rl.MOUSE_RIGHT_BUTTON)
+        return r.is_mouse_button_down(rl.MOUSE_BUTTON_RIGHT)
 
     @classmethod
     def middle_button(cls):
-        return r.is_mouse_button_down(rl.MOUSE_MIDDLE_BUTTON)
+        return r.is_mouse_button_down(rl.MOUSE_BUTTON_MIDDLE)
 
     @classmethod
     def clicked(cls):
-        return r.is_mouse_button_pressed(rl.MOUSE_LEFT_BUTTON)
+        return r.is_mouse_button_pressed(rl.MOUSE_BUTTON_LEFT)
 
 def Color(_r: int | float, g: int | float, b: int | float, a: int | float = 255):
     return r.Color(*[x if isinstance(x, int) else int(x * 255.) for x in [_r, g, b, a]])
