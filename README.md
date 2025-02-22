@@ -18,6 +18,7 @@
 - Linear algebra (vector, matrix, quaternion, taken from [Pyrr](https://github.com/adamlwgriffiths/Pyrr))
 - Easing functions (taken from [raylib-py](https://github.com/overdev/raylib-py/blob/master/src/raylibpy/easings.py))
 - Finite state machine (build on top of [transitions](https://github.com/pytransitions/transitions))
+- Action framework
 
 ### Example
 
@@ -103,7 +104,7 @@ typing==3.7.4.3
 - [X] ~~Action Nodes~~
 - [X] ~~Timer Node~~
 - [ ] RenderTexture wrapper
-- [ ] Emitter Node
+- [X] ~~Emitter Node~~
 - [ ] TileMap Node
 - [ ] 3D Nodes
 - [ ] 2D + 3D Collision

@@ -242,8 +242,10 @@ class ActionNode(ActionType, TimerNode):
 
 class WaitAction(ActionType, TimerNode):
     def __init__(self, duration: float, auto_start: bool = True):
-        TimerNode.__init__(self, interval=duration, auto_start=auto_start)
-        self.on_complete = staticmethod(self._on_complete)
+        TimerNode.__init__(self,
+                           interval=duration,
+                           auto_start=auto_start,
+                           on_complete=staticmethod(self._on_complete))
         self._completed = False
     
     @property
@@ -255,28 +257,31 @@ class WaitAction(ActionType, TimerNode):
         self.remove_me()
     
 class ActionSequence(ActionType, TimerNode, Queue):
-    def __init__(self, actions: list[ActionType], **kwargs):
+    def __init__(self, actions: list[ActionType], interval: float = 0., auto_start: bool = True, remove_on_complete: bool = True, repeat: bool = False):
         Queue.__init__(self)
+        self._actions = actions
         for action in actions:
             self.put(action)
-        auto_start = kwargs.pop("auto_start", True)
-        timer_kwargs = {
-            "interval": 0.,
-            "remove_on_complete": kwargs.pop("remove_on_complete", True),
-            "auto_start": False,
-        }
-        TimerNode.__init__(self, **timer_kwargs)
+        TimerNode.__init__(self,
+                           interval=interval,
+                           auto_start=auto_start,
+                           remove_on_complete=remove_on_complete,
+                           repeat=repeat)
         self._head = None
         if auto_start:
             self.start()
     
     def _complete(self):
-        if self.on_complete:
-            self.on_complete()
-        if self.remove_on_complete:
-            self.remove_me()
         self._completed = True
         self._running = False
+        if self.on_complete:
+            self.on_complete()
+        if self.repeat:
+            self.reset()
+            self.start()
+        else:
+            if self.remove_on_complete:
+                self.remove_me()
 
     @override
     def step(self, delta: float):
@@ -295,12 +300,16 @@ class ActionSequence(ActionType, TimerNode, Queue):
     
     @override
     def reset(self):
-        raise NotImplementedError("ActionSequence cannot be reset")
-    
+        self._completed = False
+        self._head = None
+        self.queue.clear()
+        for action in self._actions:
+            self.put(action)
+
     @override
     def start(self):
         if self._running:
-            raise RuntimeError("ActionSequence is already running")
+            return
         if self.empty():
             raise RuntimeError("ActionSequence is empty")
         self._running = True
@@ -310,6 +319,19 @@ class ActionSequence(ActionType, TimerNode, Queue):
     @override
     def stop(self):
         self._complete()
+
+class EmitterNode(TimerNode):
+    def __init__(self, emit: Callable[[], Actor], interval: float = 1., auto_start: bool = True):
+        self._emit = staticmethod(emit)
+        TimerNode.__init__(self, 
+                           interval=interval,
+                           auto_start=auto_start,
+                           repeat=True,
+                           on_complete=self._fire)
+    
+    def _fire(self):
+        if hasattr(self, "scene") and self.scene is not None:
+            self.scene.add_child(self._emit())
 
 @dataclass
 class Actor2D(Actor):

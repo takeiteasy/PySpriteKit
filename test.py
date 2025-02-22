@@ -29,12 +29,12 @@ class TestScene(sk.Scene):
                                      texture=sk.Texture(f"assets/textures/LA.png"),
                                      origin=sk.Vector2([1., 1.]),
                                      scale=sk.Vector2([0.5, 0.5])))
-    
-    def add_circle(self):
-        self.add_child(sk.CircleNode(name="test",
-                                     radius=50,
-                                     color=sk.Color(1., 0, 1.)))
 
+    def add_circle(self):
+        return sk.CircleNode(name="test",
+                             radius=50,
+                             color=sk.Color(1., 0, 1.))
+        
     @override
     def enter(self):
         self.add_child(sk.LabelNode(name="tset",
@@ -44,15 +44,14 @@ class TestScene(sk.Scene):
         self.add_child(sk.MusicNode(name="bg",
                                     music=sk.Music(f"assets/audio/country.mp3"),
                                     autostart=True))
-        self.add_child(sk.TimerNode(name="timer",
-                                    interval=1.,
-                                    repeat=True,
-                                    on_complete=lambda: self.add_circle()))
+        self.add_child(sk.EmitterNode(emit=self.add_circle,
+                                      interval=1.))
         self.add_child(sk.RectangleNode(name="poo",
                                         width=50,
                                         height=50,
                                         color=sk.Color(.5, .5, 0)))
-        self.add_child(sk.ActionSequence([sk.ActionNode(target=250.,
+        self.add_child(sk.ActionSequence([sk.WaitAction(duration=1.),
+                                          sk.ActionNode(target=250.,
                                                         easing_fn=sk.ease_bounce_in_out,
                                                         field="position.y",
                                                         actor=self.find_child("poo")),
@@ -60,7 +59,8 @@ class TestScene(sk.Scene):
                                           sk.ActionNode(target=0.,
                                                         easing_fn=sk.ease_bounce_in_out,
                                                         field="position.y",
-                                                        actor=self.find_child("poo"))]))
+                                                        actor=self.find_child("poo"))],
+                                         repeat=True))
         self.add_stuff()
 
     @override

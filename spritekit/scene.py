@@ -39,8 +39,11 @@ class Scene(FiniteStateMachine, ActorParent):
     
     @override
     def add_child(self, node: ActorType):
-        node.scene = self
-        self._add_child(node)
+        if node:
+            node.__dict__["scene"] = self
+            self._add_child(node)
+        else:
+            raise RuntimeError("Invalid Node")
 
     def enter(self):
         pass

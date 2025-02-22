@@ -21,16 +21,15 @@ from pyglsl import VertexStage, FragmentStage
 import os
 import pathlib
 
-__PATH = pathlib.Path(__file__).parent
-__camera = None
-__data_dir = ""
+__SKPATH__ = pathlib.Path(__file__).parent
+__SKDATA__ = "assets"
 
 __image_extensions = ['.png', '.bmp', '.tga', '.jpg', '.jpeg', '.gif', '.qoi', '.psd', '.dds', '.hdr', '.ktx', '.astc', '.pkm', '.pvr']
 __model_extensions = ['.obj', '.glb', '.gltf', '.iqm', '.vox', '.m3d']
 __vshader_extensions = ['.vs.glsl', '.vsh', '.vert']
 __fshader_extensions = ['.fs.glsl', '.fsh', '.frag']
 __sound_extensions = ['.wav', '.mp3', '.ogg', '.flac', '.xm', '.mod', '.qoa']
-
+__font_extensions = ['.ttf', '.otf', '.fnt']
 __cache = {}
 
 def _gen_file_paths(name, extensions, folders):
@@ -38,8 +37,8 @@ def _gen_file_paths(name, extensions, folders):
     for folder in folders:
         for ext in extensions:
             paths.append(folder + os.path.sep + name + ext)
-            paths.append(__data_dir + os.path.sep + folder + os.path.sep + name + ext)
-            paths.append(str(__PATH / folder / name) + ext)
+            paths.append(__SKDATA__ + os.path.sep + folder + os.path.sep + name + ext)
+            paths.append(str(__SKPATH__ / folder / name) + ext)
     return paths
     
 def find_file(name, extensions, folders):
@@ -118,6 +117,9 @@ def Sound(file):
 
 def Music(file: str):
     return r.load_music_stream(find_file(file, __sound_extensions, _file_locations('audio')))
+
+def Font(file: str):
+    return r.load_font(find_file(file, __font_extensions, _file_locations('fonts')))
 
 def _fix_key(kname):
     # return is a reserved word, so alias enter to return
