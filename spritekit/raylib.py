@@ -68,6 +68,16 @@ def _unload_asset(key: str):
         r.unload_model(k)
     elif isinstance(k, r.Texture):
         r.unload_texture(k)
+    elif isinstance(k, r.Image):
+        r.unload_image(k)
+    elif isinstance(k, r.Font):
+        r.unload_font(k)
+    elif isinstance(k, r.Wave):
+        r.unload_wave(k)
+    elif isinstance(k, r.Sound):
+        r.unload_sound(k)
+    elif isinstance(k, r.Music):
+        r.unload_music_stream(k)
     else:
         try:
             del k
@@ -85,6 +95,7 @@ def unload_cache(key: str = None):
 def _file_locations(name):
     return ['.', f"assets/{name}", name]
 
+@cache_result
 def Image(file: str):
     return r.load_image(find_file(file, __image_extensions, _file_locations('textures')))
 
@@ -104,9 +115,11 @@ def CompileShader(vertex: str | VertexStage, fragment: str | FragmentStage):
 def Model(file: str):
     return r.load_model(find_file(file, __model_extensions, _file_locations('models')))
 
+@cache_result
 def Wave(file: str):
     return r.load_wave(find_file(file, __sound_extensions, _file_locations('audio')))
 
+@cache_result
 def Sound(file):
     if isinstance(file, r.Wave):
         return r.load_sound_from_wave(file)
@@ -115,9 +128,11 @@ def Sound(file):
             return r.load_sound(find_file(file, __sound_extensions, _file_locations('audio')))
         return _load(file)
 
+@cache_result
 def Music(file: str):
     return r.load_music_stream(find_file(file, __sound_extensions, _file_locations('audio')))
 
+@cache_result
 def Font(file: str):
     return r.load_font(find_file(file, __font_extensions, _file_locations('fonts')))
 
