@@ -25,7 +25,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="spritekit",
-    version="0.0.1",
+    version="0.0.2",
     author="George Watson",
     author_email="gigolo@hotmail.co.uk",
     description="2D scene+actor framework built on top of raylib",
