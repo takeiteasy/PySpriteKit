@@ -106,8 +106,7 @@ typing==3.7.4.3
 - [ ] RenderTexture wrapper
 - [X] ~~Emitter Node~~
 - [ ] TileMap Node
-- [ ] 3D Nodes
-- [ ] 2D + 3D Collision
+- [ ] 3D Nodes (displayed in 2D)
 - [ ] 2D Physics
 - [ ] Video Node
 - [ ] Transform Node

@@ -40,6 +40,9 @@ class TestScene(sk.Scene):
         import spritekit.physics as ph
         import pyray as r
         a = ph.PhysicsBody(r.create_physics_body_circle(r.Vector2(100, 100), 45, 10), enabled=False)
+        print(a.enabled)
+        a.enabled = True
+        print(a.enabled)
         self.add_child(sk.LabelNode(name="tset",
                                     text="Hello, World!",
                                     font_size=24,
