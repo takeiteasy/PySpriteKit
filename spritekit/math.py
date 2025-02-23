@@ -49,7 +49,7 @@ from functools import wraps
 from numbers import Number
 from multipledispatch import dispatch
 
-__all__ = ["Vector2", "Vector3", "Vector4", "Matrix"]
+__all__ = ["Vector2", "Vector3", "Matrix"]
 
 def all_parameters_as_numpy_arrays(fn):
     """Converts all of a function's arguments to numpy arrays.
@@ -216,31 +216,6 @@ class BaseVector3(BaseVector):
     xyz = NpProxy([0,1,2])
     #: The X,Z values of this Vector as a numpy.ndarray.
     xz = NpProxy([0,2])
-
-class BaseVector4(BaseVector):
-    _shape = (4,)
-    #: The X value of this Vector.
-    x = NpProxy(0)
-    #: The Y value of this Vector.
-    y = NpProxy(1)
-    #: The Z value of this Vector.
-    z = NpProxy(2)
-    #: The W value of this Vector.
-    w = NpProxy(3)
-    #: The X,Y values of this Vector as a numpy.ndarray.
-    xy = NpProxy([0,1])
-    #: The X,Y,Z values of this Vector as a numpy.ndarray.
-    xyz = NpProxy([0,1,2])
-    #: The X,Y,Z,W values of this Vector as a numpy.ndarray.
-    xyzw = NpProxy(slice(0,4))
-    #: The X,Z values of this Vector as a numpy.ndarray.
-    xz = NpProxy([0,2])
-    #: The X,W values of this Vector as a numpy.ndarray.
-    xw = NpProxy([0,3])
-    #: The X,Y,W values of this Vector as a numpy.ndarray.
-    xyw = NpProxy([0,1,3])
-    #: The X,Z,W values of this Vector as a numpy.ndarray.
-    xzw = NpProxy([0,2,3])
 
 class BaseMatrix(NpObject):
     _shape = (4,4,)
@@ -569,13 +544,6 @@ def _vector2_from_vector3(vector, dtype=None):
     dtype = dtype or vector.dtype
     return np.array([vector[0], vector[1]], dtype=dtype), vector[2]
 
-@parameters_as_numpy_arrays('vector')
-def _vector2_from_vector4(vector, dtype=None):
-    """Returns a vector2 and the W component as a tuple.
-    """
-    dtype = dtype or vector.dtype
-    return np.array([vector[0], vector[1]], dtype=dtype), vector[2], vector[3]
-
 class Vector2(BaseVector2, VectorCore):
     @classmethod
     def from_vector3(cls, vector, dtype=None):
@@ -585,15 +553,6 @@ class Vector2(BaseVector2, VectorCore):
         """
         vec, z = _vector2_from_vector3(vector, dtype)
         return cls(vec), z
-
-    @classmethod
-    def from_vector4(cls, vector, dtype=None):
-        """Create a Vector2 from a Vector4.
-
-        Returns the Vector2, Z and the W component as a tuple.
-        """
-        vec, z, w = _vector2_from_vector4(vector, dtype)
-        return cls(vec), z, w
 
     def __new__(cls, value=None, w=0.0, dtype=None):
         if value is not None:
@@ -715,27 +674,11 @@ class Vector2(BaseVector2, VectorCore):
     def vector2(self):
         return self
 
-@parameters_as_numpy_arrays('vector')
-def _vector3_from_vector4(vector, dtype=None):
-    """Returns a vector3 and the W component as a tuple.
-    """
-    dtype = dtype or vector.dtype
-    return (np.array([vector[0], vector[1], vector[2]], dtype=dtype), vector[3])
-
 @parameters_as_numpy_arrays('mat')
 def create_from_matrix44_translation(mat, dtype=None):
     return np.array(mat[3, :3], dtype=dtype)
 
 class Vector3(BaseVector3, VectorCore):
-    @classmethod
-    def from_vector4(cls, vector, dtype=None):
-        """Create a Vector3 from a Vector4.
-
-        Returns the Vector3 and the W component as a tuple.
-        """
-        vec, w = _vector3_from_vector4(vector, dtype)
-        return (cls(vec), w)
-
     def __new__(cls, value=None, w=0.0, dtype=None):
         if value is not None:
             obj = value
@@ -855,134 +798,9 @@ class Vector3(BaseVector3, VectorCore):
         """
         return Vector3(-self)
 
-@parameters_as_numpy_arrays('vector')
-def _vector4_from_vector3(vector, w=0., dtype=None):
-    dtype = dtype or vector.dtype
-    return np.array([vector[0], vector[1], vector[2], w], dtype=dtype)
-
 @parameters_as_numpy_arrays('mat')
 def create_from_matrix44_translation(mat, dtype=None):
     return np.array(mat[3, :4], dtype=dtype)
-
-class Vector4(BaseVector4, VectorCore):
-    @classmethod
-    def from_vector3(cls, vector, w=0.0, dtype=None):
-        """Create a Vector4 from a Vector3.
-
-        By default, the W value is 0.0.
-        """
-        return cls(_vector4_from_vector3(vector, w, dtype))
-
-    def __new__(cls, value=None, dtype=None):
-        if value is not None:
-            obj = value
-            if not isinstance(value, np.ndarray):
-                obj = np.array(value, dtype=dtype)
-            # matrix44
-            if obj.shape in ((4,4,)):
-                obj = create_from_matrix44_translation(obj, dtype=dtype)
-        else:
-            obj = np.zeros(cls._shape, dtype=dtype)
-        obj = obj.view(cls)
-        return super(Vector4, cls).__new__(cls, obj)
-
-    ########################
-    # Basic Operators
-    @dispatch(NpObject)
-    def __add__(self, other):
-        self._unsupported_type('add', other)
-
-    @dispatch(NpObject)
-    def __sub__(self, other):
-        self._unsupported_type('subtract', other)
-
-    @dispatch(NpObject)
-    def __mul__(self, other):
-        self._unsupported_type('multiply', other)
-
-    @dispatch(NpObject)
-    def __truediv__(self, other):
-        self._unsupported_type('divide', other)
-
-    @dispatch(NpObject)
-    def __div__(self, other):
-        self._unsupported_type('divide', other)
-
-    @dispatch((NpObject, Number, np.number))
-    def __xor__(self, other):
-        self._unsupported_type('XOR', other)
-
-    @dispatch((NpObject, Number, np.number))
-    def __or__(self, other):
-        self._unsupported_type('OR', other)
-
-    @dispatch((NpObject, Number, np.number))
-    def __ne__(self, other):
-        self._unsupported_type('NE', other)
-
-    @dispatch((NpObject, Number, np.number))
-    def __eq__(self, other):
-        self._unsupported_type('EQ', other)
-
-    ########################
-    # Vectors
-    @dispatch((BaseVector4, np.ndarray, list))
-    def __add__(self, other):
-        return Vector4(super(Vector4, self).__add__(other))
-
-    @dispatch((BaseVector4, np.ndarray, list))
-    def __sub__(self, other):
-        return Vector4(super(Vector4, self).__sub__(other))
-
-    @dispatch((BaseVector4, np.ndarray, list))
-    def __mul__(self, other):
-        return Vector4(super(Vector4, self).__mul__(other))
-
-    @dispatch((BaseVector4, np.ndarray, list))
-    def __truediv__(self, other):
-        return Vector4(super(Vector4, self).__truediv__(other))
-
-    @dispatch((BaseVector4, np.ndarray, list))
-    def __div__(self, other):
-        return Vector4(super(Vector4, self).__div__(other))
-
-    @dispatch(BaseVector)
-    def __xor__(self, other):
-       return self.cross(Vector4(other))
-
-    @dispatch((BaseVector4, np.ndarray, list))
-    def __or__(self, other):
-        return self.dot(Vector4(other))
-
-    @dispatch((BaseVector4, np.ndarray, list))
-    def __ne__(self, other):
-        return bool(np.any(super(Vector4, self).__ne__(other)))
-
-    @dispatch((BaseVector4, np.ndarray, list))
-    def __eq__(self, other):
-        return bool(np.all(super(Vector4, self).__eq__(other)))
-
-    ########################
-    # Number
-    @dispatch((Number, np.number))
-    def __add__(self, other):
-        return Vector4(super(Vector4, self).__add__(other))
-
-    @dispatch((Number, np.number))
-    def __sub__(self, other):
-        return Vector4(super(Vector4, self).__sub__(other))
-
-    @dispatch((Number, np.number))
-    def __mul__(self, other):
-        return Vector4(super(Vector4, self).__mul__(other))
-
-    @dispatch((Number, np.number))
-    def __truediv__(self, other):
-        return Vector4(super(Vector4, self).__truediv__(other))
-
-    @dispatch((Number, np.number))
-    def __div__(self, other):
-        return Vector4(super(Vector4, self).__div__(other))
 
 @parameters_as_numpy_arrays('vector')
 def matrix33_create_from_eulers(eulers, dtype=None):
