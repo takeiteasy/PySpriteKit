@@ -3,17 +3,17 @@ import pyray as r
 from enum import Enum
 
 def _get_center(vertices: list[Vector2]) -> Vector2:
-    return Vector2([sum(v.x for v in vertices) / len(vertices),
-                    sum(v.y for v in vertices) / len(vertices)])
+    l = len(vertices)
+    return Vector2([sum(v.x for v in vertices) / l, sum(v.y for v in vertices) / l])
 
-def _normalize(vertices: list[Vector2]) -> list[Vector2]:
+def _normalize_vertices(vertices: list[Vector2]) -> list[Vector2]:
     minx = min(v.x for v in vertices)
     maxx = max(v.x for v in vertices)
     miny = min(v.y for v in vertices)
     maxy = max(v.y for v in vertices)
     return [Vector2([x - minx - (maxx - minx) / 2., y - miny - (maxy - miny) / 2.]) for x, y in vertices]
 
-def _get_pixels_per_meter():
+def _get_pixels_per_meter() -> Vector2:
     monitor = r.get_current_monitor()
     monitor_size = Vector2([float(r.get_monitor_physical_width(monitor)),
                             float(r.get_monitor_physical_height(monitor))])
@@ -27,12 +27,16 @@ def _triple_product(a: Vector2, b: Vector2, c: Vector2) -> Vector2:
 
 class RigidBody:
     def __init__(self, vertices: list[Vector2], mass: float = 1., is_static: bool = False):
-        self.vertices = _normalize(vertices)
+        self._vertices = _normalize_vertices(vertices)
         self.position = _get_center(vertices)
         self.velocity = Vector2([0., 0.])
         self.force = Vector2([0., 0.])
         self.mass = mass
         self.is_static = is_static
+    
+    @property
+    def vertices(self) -> list[Vector2]:
+        return [v + self.position for v in self._vertices]
 
     def apply_force(self, force: Vector2):
         self.force += force
@@ -43,14 +47,15 @@ class RigidBody:
         self.force = Vector2([0., 0.])
     
     def support(self, direction: Vector2) -> Vector2:
-        return max(self.vertices, key=lambda v: Vector2.dot(v, direction))
+        return max(self.vertices, key=lambda v: v.dot(direction))
  
     def draw(self):
-        vertices = [v + self.position for v in self.vertices]
+        vertices = self.vertices
         for v in vertices:
             r.draw_circle(int(v.x), int(v.y), 1, r.RED)
-        for i in range(len(vertices)):
-            j = (i + 1) % len(vertices)
+        l = len(vertices)
+        for i in range(l):
+            j = (i + 1) % l
             r.draw_line(int(vertices[i].x), int(vertices[i].y), int(vertices[j].x), int(vertices[j].y), r.RED)
 
 class PolygonBody(RigidBody):
@@ -93,9 +98,10 @@ class CircleBody(RigidBody):
     def __init__(self, position: Vector2, radius: float, mass: float = 1., is_static: bool = False):
         super().__init__(vertices=[position], mass=mass, is_static=is_static)
         self.radius = radius
+        self.position = position
     
     def support(self, direction: Vector2) -> Vector2:
-        return self.position + self.radius * direction.normalize()
+        return self.position if direction.squared_length < 1e-10 else self.position + self.radius * direction.normalised
 
     def draw(self):
         r.draw_circle(int(self.position.x), int(self.position.y), self.radius, r.RED)
@@ -121,6 +127,8 @@ class GJK:
         match len(self.simplex):
             case 0:
                 self.direction = self.shapeB.position - self.shapeA.position
+                if self.direction.squared_length < 1e-10:
+                    self.direction = Vector2([1., 0.])
             case 1:
                 self.direction *= -1.
             case 2:
@@ -143,7 +151,7 @@ class GJK:
                 assert False
         vertex = self.support(self.direction)
         self.simplex.append(vertex)
-        return SimplexEvolution.STILL_EVOLVING if self.direction.dot(vertex) > 0 else SimplexEvolution.NO_INTERSECTION
+        return SimplexEvolution.STILL_EVOLVING if self.direction.dot(vertex) > -1e-10 else SimplexEvolution.NO_INTERSECTION
 
     def test(self):
         for _ in range(GJK.MAX_ITERATIONS):
@@ -181,13 +189,14 @@ r.init_window(1280, 800, "i love physics i am a physics engine")
 
 world = PhysicsWorld()
 
-circle = CircleBody(Vector2([150., 350.]), 10.)
-rectangle = RectangleBody(Vector2([100., 300.]), 50., 50.)
+circle = CircleBody(Vector2([150., 350.]), 10., is_static=True)
+rectangle = RectangleBody(Vector2([100., 300.]), 50., 50., is_static=True)
 pentagon = PolygonBody([Vector2([200., 300.]),
                         Vector2([235., 330.]),
                         Vector2([220., 370.]),
                         Vector2([180., 370.]),
                         Vector2([165., 330.])])
+
 world.bodies.append(circle)
 world.bodies.append(rectangle)
 world.bodies.append(pentagon)
@@ -197,6 +206,17 @@ while not r.window_should_close():
     r.clear_background(r.RAYWHITE)
     world.step(r.get_frame_time())
     world.draw()
+
+    mxy = r.get_mouse_position()
+    circle.position = Vector2([mxy.x, mxy.y])
+
+    b, s = gjk(circle, pentagon)
+    if b:
+        r.draw_text(f"circle + pentagon", 10, 10, 20, r.RED)
+    b, s = gjk(circle, rectangle) 
+    if b:
+        r.draw_text(f"circle + rectangle", 10, 30, 20, r.RED)
+        
     r.end_drawing()
 
 r.close_window()
