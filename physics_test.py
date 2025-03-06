@@ -1,5 +1,6 @@
 from slimrr import *
 import pyray as r
+from enum import Enum
 
 def _get_center(vertices: list[Vector2]) -> Vector2:
     return Vector2([sum(v.x for v in vertices) / len(vertices),
@@ -19,6 +20,10 @@ def _get_pixels_per_meter():
     fb_size = Vector2([float(r.get_render_width()),
                        float(r.get_render_height())])
     return fb_size / monitor_size
+
+def _triple_product(a: Vector2, b: Vector2, c: Vector2) -> Vector2:
+    xy, _ = Vector2.from_vector3(vector3.cross(Vector3([a.x, a.y, 0.]).cross(Vector3([b.x, b.y, 0.])), Vector3([c.x, c.y, 0.])))
+    return xy
 
 class RigidBody:
     def __init__(self, vertices: list[Vector2], mass: float = 1., is_static: bool = False):
@@ -48,11 +53,11 @@ class RigidBody:
             j = (i + 1) % len(vertices)
             r.draw_line(int(vertices[i].x), int(vertices[i].y), int(vertices[j].x), int(vertices[j].y), r.RED)
 
-class Polygon(RigidBody):
+class PolygonBody(RigidBody):
     def __init__(self, vertices: list[Vector2], mass: float = 1., is_static: bool = False):
         super().__init__(vertices=vertices, mass=mass, is_static=is_static)
 
-class Point(RigidBody):
+class PointBody(RigidBody):
     def __init__(self, position: Vector2, mass: float = 1., is_static: bool = False):
         super().__init__(vertices=[position], mass=mass, is_static=is_static)
     
@@ -62,7 +67,7 @@ class Point(RigidBody):
     def draw(self):
         r.draw_circle(int(self.position.x), int(self.position.y), 1, r.RED)
 
-class Line(RigidBody):
+class LineBody(RigidBody):
     def __init__(self, start: Vector2, end: Vector2, mass: float = 1., is_static: bool = False):
         super().__init__(vertices=[start, end], mass=mass, is_static=is_static)
         self.position = (start + end) / 2.
@@ -73,7 +78,7 @@ class Line(RigidBody):
     def draw(self):
         r.draw_line(int(self.vertices[0].x), int(self.vertices[0].y), int(self.vertices[1].x), int(self.vertices[1].y), r.RED)
 
-class Rectangle(RigidBody):
+class RectangleBody(RigidBody):
     def __init__(self, position: Vector2, width: float, height: float, mass: float = 1., is_static: bool = False):
         self.width = width
         self.height = height
@@ -84,7 +89,7 @@ class Rectangle(RigidBody):
                          mass=mass,
                          is_static=is_static)
     
-class Circle(RigidBody):
+class CircleBody(RigidBody):
     def __init__(self, position: Vector2, radius: float, mass: float = 1., is_static: bool = False):
         super().__init__(vertices=[position], mass=mass, is_static=is_static)
         self.radius = radius
@@ -94,6 +99,67 @@ class Circle(RigidBody):
 
     def draw(self):
         r.draw_circle(int(self.position.x), int(self.position.y), self.radius, r.RED)
+
+class SimplexEvolution(Enum):
+    NO_INTERSECTION = 0
+    FOUND_INTERSECTION = 1
+    STILL_EVOLVING = 2
+
+class GJK:
+    MAX_ITERATIONS = 20
+
+    def __init__(self, shapeA: RigidBody, shapeB: RigidBody):
+        self.shapeA = shapeA
+        self.shapeB = shapeB
+        self.direction = Vector2([0., 0.])
+        self.simplex = []
+
+    def support(self, direction: Vector2) -> Vector2:
+        return self.shapeA.support(direction) - self.shapeB.support(direction * -1.)
+    
+    def evolve(self) -> SimplexEvolution:
+        match len(self.simplex):
+            case 0:
+                self.direction = self.shapeB.position - self.shapeA.position
+            case 1:
+                self.direction *= -1.
+            case 2:
+                cb = self.simplex[1] - self.simplex[0]
+                c0 = self.simplex[0] * -1.
+                self.direction = _triple_product(cb, c0, cb)
+            case 3:
+                a0 = self.simplex[2] * -1.
+                ab = self.simplex[1] - self.simplex[2]
+                ac = self.simplex[0] - self.simplex[2]
+                ab_perp = _triple_product(ac, ab, ab)
+                ac_perp = _triple_product(ab, ac, ac)
+                if ab_perp.dot(a0) > 0:
+                    self.simplex.pop(0)
+                elif ac_perp.dot(a0) > 0:
+                    self.simplex.pop(1)
+                else:
+                    return SimplexEvolution.FOUND_INTERSECTION
+            case _:
+                assert False
+        vertex = self.support(self.direction)
+        self.simplex.append(vertex)
+        return SimplexEvolution.STILL_EVOLVING if self.direction.dot(vertex) > 0 else SimplexEvolution.NO_INTERSECTION
+
+    def test(self):
+        for _ in range(GJK.MAX_ITERATIONS):
+            match self.evolve():
+                case SimplexEvolution.FOUND_INTERSECTION:
+                    return True
+                case SimplexEvolution.NO_INTERSECTION:
+                    return False
+                case SimplexEvolution.STILL_EVOLVING:
+                    pass
+        return False
+
+def gjk(shapeA: RigidBody, shapeB: RigidBody) -> tuple[bool, list[Vector2]]:
+    gjk = GJK(shapeA, shapeB)
+    result = gjk.test()
+    return result, gjk.simplex
 
 class PhysicsWorld:
     def __init__(self):
@@ -115,13 +181,13 @@ r.init_window(1280, 800, "i love physics i am a physics engine")
 
 world = PhysicsWorld()
 
-circle = Circle(Vector2([150., 350.]), 10.)
-rectangle = Rectangle(Vector2([100., 300.]), 50., 50.)
-pentagon = Polygon([Vector2([200., 300.]),
-                    Vector2([235., 330.]),
-                    Vector2([220., 370.]),
-                    Vector2([180., 370.]),
-                    Vector2([165., 330.])])
+circle = CircleBody(Vector2([150., 350.]), 10.)
+rectangle = RectangleBody(Vector2([100., 300.]), 50., 50.)
+pentagon = PolygonBody([Vector2([200., 300.]),
+                        Vector2([235., 330.]),
+                        Vector2([220., 370.]),
+                        Vector2([180., 370.]),
+                        Vector2([165., 330.])])
 world.bodies.append(circle)
 world.bodies.append(rectangle)
 world.bodies.append(pentagon)
