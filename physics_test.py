@@ -128,13 +128,11 @@ class Collision:
         self.overlap = overlap
         self.shapeA = shapeA
         self.shapeB = shapeB
-    
-    def __str__(self):
-        return f"Collision(intersection={self.intersection}, normal={self.normal}, overlap={self.overlap})"
 
 class GJK:
     MAX_ITERATIONS = 20
     MAX_INTERSECTIONS = 32
+    EPSILON = 1e-10
 
     def __init__(self, shapeA: RigidBody, shapeB: RigidBody):
         self.shapeA = shapeA
@@ -142,14 +140,14 @@ class GJK:
         self.direction = Vector2([0., 0.])
         self.simplex = []
 
-    def support(self, direction: Vector2) -> Vector2:
+    def _support(self, direction: Vector2) -> Vector2:
         return self.shapeA.support(direction) - self.shapeB.support(direction * -1.)
     
-    def evolve(self) -> SimplexEvolution:
+    def _evolve(self) -> SimplexEvolution:
         match len(self.simplex):
             case 0:
                 self.direction = self.shapeB.position - self.shapeA.position
-                if self.direction.squared_length < 1e-10:
+                if self.direction.squared_length < GJK.EPSILON:
                     self.direction = Vector2([1., 0.])
             case 1:
                 self.direction *= -1.
@@ -171,13 +169,13 @@ class GJK:
                     return SimplexEvolution.FOUND_INTERSECTION
             case _:
                 assert False
-        vertex = self.support(self.direction)
+        vertex = self._support(self.direction)
         self.simplex.append(vertex)
-        return SimplexEvolution.STILL_EVOLVING if self.direction.dot(vertex) > -1e-10 else SimplexEvolution.NO_INTERSECTION
+        return SimplexEvolution.STILL_EVOLVING if self.direction.dot(vertex) > -GJK.EPSILON else SimplexEvolution.NO_INTERSECTION
 
     def test(self):
         for _ in range(GJK.MAX_ITERATIONS):
-            match self.evolve():
+            match self._evolve():
                 case SimplexEvolution.FOUND_INTERSECTION:
                     return True
                 case SimplexEvolution.NO_INTERSECTION:
@@ -186,7 +184,7 @@ class GJK:
                     pass
         return False
     
-    def closest_edge(self, winding: PolygonWinding) -> Edge:
+    def _closest_edge(self, winding: PolygonWinding) -> Edge:
         closest_distance = float('inf')
         closest_normal = Vector2([0., 0.])
         closest_index = -1
@@ -205,17 +203,15 @@ class GJK:
     def intersection(self) -> Collision | None:
         if not self.test():
             return None
-        
         e0 = (self.simplex[1].x - self.simplex[0].x) * (self.simplex[1].y + self.simplex[0].y)
         e1 = (self.simplex[2].x - self.simplex[1].x) * (self.simplex[2].y + self.simplex[1].y)
         e2 = (self.simplex[0].x - self.simplex[2].x) * (self.simplex[0].y + self.simplex[2].y)
         winding = PolygonWinding.CLOCKWISE if e0 + e1 + e2 >= 0. else PolygonWinding.ANTICLOCKWISE
-        
         for _ in range(GJK.MAX_INTERSECTIONS):
-            edge = self.closest_edge(winding)
-            support = self.support(edge.normal)
+            edge = self._closest_edge(winding)
+            support = self._support(edge.normal)
             distance = edge.normal.dot(support)
-            if abs(distance - edge.distance) <= 1e-10:
+            if abs(distance - edge.distance) <= GJK.EPSILON:
                 return Collision(self.shapeA, self.shapeB, support, edge.normal, abs(edge.distance))
             else:
                 self.simplex.insert(edge.index, support)
@@ -235,14 +231,12 @@ class PhysicsWorld:
         self.gravity = Vector2([0., 9.81])
         self.pixels_per_meter = _get_pixels_per_meter()
 
-    def resolve_collision(self, collision: Collision):
+    def _resolve_collision(self, collision: Collision):
         # Skip if both bodies are static
         if collision.shapeA.is_static and collision.shapeB.is_static:
             return
-
         # Calculate separation vector - flip the normal direction
         separation = collision.normal * -collision.overlap
-
         # If both bodies can move, split the separation between them
         if not collision.shapeA.is_static and not collision.shapeB.is_static:
             collision.shapeA.position += separation * 0.5
@@ -253,23 +247,27 @@ class PhysicsWorld:
         elif not collision.shapeB.is_static:
             collision.shapeB.position -= separation
 
-    def step(self, dt: float):
-        # Apply forces and update positions
+    def update(self, dt: float):
         for body in self.bodies:
             if not body.is_static:
                 # body.apply_force(self.gravity * body.mass)
                 body.update(dt * self.pixels_per_meter)
-        
-        # Check and resolve collisions
+
+    def resolve(self):
         for i in range(len(self.bodies)):
             for j in range(i + 1, len(self.bodies)):  # Changed to avoid duplicate checks
                 collision = epa(self.bodies[i], self.bodies[j])
                 if collision:
-                    self.resolve_collision(collision)
-    
+                    self._resolve_collision(collision)
+
     def draw(self):
         for body in self.bodies:
             body.draw()
+    
+    def step(self, dt: float):
+        self.update(dt)
+        self.resolve()
+        self.draw()
 
 r.init_window(1280, 800, "i love physics i am a physics engine")
 
@@ -295,7 +293,6 @@ while not r.window_should_close():
     circle.position = Vector2([mxy.x, mxy.y])
     
     world.step(r.get_frame_time())
-    world.draw()
  
     r.end_drawing()
 
