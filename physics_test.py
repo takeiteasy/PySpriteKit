@@ -1,6 +1,7 @@
 from slimrr import *
 import pyray as r
 from enum import Enum
+import math
 
 def _get_center(vertices: list[Vector2]) -> Vector2:
     l = len(vertices)
@@ -31,21 +32,61 @@ class RigidBody:
         self.position = _get_center(vertices)
         self.velocity = Vector2([0., 0.])
         self.force = Vector2([0., 0.])
-        self.mass = mass
+        self.mass = float('inf') if is_static else mass
+        self.inv_mass = 0. if is_static else 1. / mass
         self.is_static = is_static
+        self.restitution = 0.5
+        self.friction = 0.2
+        self.damping = 0.98
+        self.angular_damping = 0.98  # Separate damping for rotation
+        
+        # Angular properties
+        self.angle = 0.0
+        self.angular_velocity = 0.0
+        self.torque = 0.0
+        self.inertia = self._calculate_inertia()
+        self.inv_inertia = 0. if is_static else 1. / self.inertia
+    
+    def _calculate_inertia(self) -> float:
+        # Base calculation - override in subclasses
+        # For point masses, use small fixed inertia
+        return 0.01 * self.mass
     
     @property
     def vertices(self) -> list[Vector2]:
-        return [v + self.position for v in self._vertices]
+        # Transform vertices by both position and rotation
+        rotated = []
+        cos_a = math.cos(self.angle)
+        sin_a = math.sin(self.angle)
+        for v in self._vertices:
+            # Rotate vertex
+            rx = v.x * cos_a - v.y * sin_a
+            ry = v.x * sin_a + v.y * cos_a
+            # Translate to position
+            rotated.append(Vector2([rx + self.position.x, ry + self.position.y]))
+        return rotated
 
-    def apply_force(self, force: Vector2):
+    def apply_force(self, force: Vector2, point: Vector2 = None):
         self.force += force
+        if point is not None:
+            # Calculate torque from force applied at point
+            r = point - self.position
+            self.torque += r.x * force.y - r.y * force.x
 
     def update(self, dt: float):
-        self.velocity += self.force * (dt / self.mass)
-        self.position += self.velocity * dt
-        self.force = Vector2([0., 0.])
-    
+        if not self.is_static:
+            # Linear motion
+            self.velocity += self.force * (dt * self.inv_mass)
+            self.velocity *= self.damping
+            self.position += self.velocity * dt
+            self.force = Vector2([0., 0.])
+            
+            # Angular motion
+            self.angular_velocity += self.torque * (dt * self.inv_inertia)
+            self.angular_velocity *= self.angular_damping
+            self.angle += self.angular_velocity * dt
+            self.torque = 0.0
+
     def support(self, direction: Vector2) -> Vector2:
         return max(self.vertices, key=lambda v: v.dot(direction))
  
@@ -59,12 +100,12 @@ class RigidBody:
             r.draw_line(int(vertices[i].x), int(vertices[i].y), int(vertices[j].x), int(vertices[j].y), r.RED)
 
 class PolygonBody(RigidBody):
-    def __init__(self, vertices: list[Vector2], mass: float = 1., is_static: bool = False):
+    def __init__(self, vertices: list[Vector2], mass: float = 1., is_static: bool=False):
         super().__init__(vertices=vertices, mass=mass, is_static=is_static)
 
 class PointBody(RigidBody):
-    def __init__(self, position: Vector2, mass: float = 1., is_static: bool = False):
-        super().__init__(vertices=[position], mass=mass, is_static=is_static)
+    def __init__(self, position: Vector2, mass: float = 1.):
+        super().__init__(vertices=[position], mass=mass, is_static=True)
     
     def support(self, direction: Vector2) -> Vector2:
         return self.position
@@ -73,8 +114,8 @@ class PointBody(RigidBody):
         r.draw_circle(int(self.position.x), int(self.position.y), 1, r.RED)
 
 class LineBody(RigidBody):
-    def __init__(self, start: Vector2, end: Vector2, mass: float = 1., is_static: bool = False):
-        super().__init__(vertices=[start, end], mass=mass, is_static=is_static)
+    def __init__(self, start: Vector2, end: Vector2, mass: float = 1.):
+        super().__init__(vertices=[start, end], mass=mass, is_static=True)
         self.position = (start + end) / 2.
     
     def support(self, direction: Vector2) -> Vector2:
@@ -84,7 +125,7 @@ class LineBody(RigidBody):
         r.draw_line(int(self.vertices[0].x), int(self.vertices[0].y), int(self.vertices[1].x), int(self.vertices[1].y), r.RED)
 
 class RectangleBody(RigidBody):
-    def __init__(self, position: Vector2, width: float, height: float, mass: float = 1., is_static: bool = False):
+    def __init__(self, position: Vector2, width: float, height: float, mass: float=1., is_static: bool=False):
         self.width = width
         self.height = height
         super().__init__(vertices=[position,
@@ -94,12 +135,20 @@ class RectangleBody(RigidBody):
                          mass=mass,
                          is_static=is_static)
     
+    def _calculate_inertia(self) -> float:
+        # Moment of inertia for a rectangle: I = (1/12) * m * (w^2 + h^2)
+        return (1.0/12.0) * self.mass * (self.width * self.width + self.height * self.height)
+
 class CircleBody(RigidBody):
-    def __init__(self, position: Vector2, radius: float, mass: float = 1., is_static: bool = False):
-        super().__init__(vertices=[position], mass=mass, is_static=is_static)
+    def __init__(self, position: Vector2, radius: float, mass: float=1., is_static: bool=False):
         self.radius = radius
+        super().__init__(vertices=[position], mass=mass, is_static=is_static)
         self.position = position
     
+    def _calculate_inertia(self) -> float:
+        # Moment of inertia for a solid circle: I = (1/2) * m * r^2
+        return 0.5 * self.mass * self.radius * self.radius
+
     def support(self, direction: Vector2) -> Vector2:
         return self.position if direction.squared_length < 1e-10 else self.position + self.radius * direction.normalised
 
@@ -128,6 +177,7 @@ class Collision:
         self.overlap = overlap
         self.shapeA = shapeA
         self.shapeB = shapeB
+        self.restitution = 0.3  # Reduced restitution for less bouncy collisions
 
 class GJK:
     MAX_ITERATIONS = 20
@@ -191,30 +241,57 @@ class GJK:
         for i in range(len(self.simplex)):
             j = (i + 1) % len(self.simplex)
             line = self.simplex[j] - self.simplex[i]
+            # Skip if line is too short (points are too close together)
+            if line.squared_length < GJK.EPSILON:
+                continue
+            # Calculate normal and normalize it safely
             normal = Vector2([line.y, -line.x]) if winding == PolygonWinding.CLOCKWISE else Vector2([-line.y, line.x])
-            normal = normal.normalised
-            dist = normal.dot(self.simplex[i])
-            if dist < closest_distance:
-                closest_distance = dist
-                closest_normal = normal
-                closest_index = j
+            length = (normal.x * normal.x + normal.y * normal.y) ** 0.5
+            if length > GJK.EPSILON:  # Only normalize if length is not too close to zero
+                normal = normal / length
+                dist = normal.dot(self.simplex[i])
+                if dist < closest_distance:
+                    closest_distance = dist
+                    closest_normal = normal
+                    closest_index = j
         return Edge(closest_distance, closest_normal, closest_index)
 
     def intersection(self) -> Collision | None:
         if not self.test():
             return None
+        # Get winding direction
         e0 = (self.simplex[1].x - self.simplex[0].x) * (self.simplex[1].y + self.simplex[0].y)
         e1 = (self.simplex[2].x - self.simplex[1].x) * (self.simplex[2].y + self.simplex[1].y)
         e2 = (self.simplex[0].x - self.simplex[2].x) * (self.simplex[0].y + self.simplex[2].y)
         winding = PolygonWinding.CLOCKWISE if e0 + e1 + e2 >= 0. else PolygonWinding.ANTICLOCKWISE
+        # EPA loop
+        min_distance = float('inf')
+        min_normal = Vector2([0., 0.])
+        min_support = None
         for _ in range(GJK.MAX_INTERSECTIONS):
             edge = self._closest_edge(winding)
             support = self._support(edge.normal)
             distance = edge.normal.dot(support)
+            if distance < min_distance:
+                min_distance = distance
+                min_normal = edge.normal
+                min_support = support
             if abs(distance - edge.distance) <= GJK.EPSILON:
-                return Collision(self.shapeA, self.shapeB, support, edge.normal, abs(edge.distance))
-            else:
-                self.simplex.insert(edge.index, support)
+                # Calculate direction from A to B
+                direction = self.shapeB.position - self.shapeA.position
+                # Ensure normal points from A to B
+                if min_normal.dot(direction) < 0:
+                    min_normal *= -1
+                    min_distance *= -1
+                return Collision(self.shapeA, self.shapeB, min_support, min_normal, abs(min_distance))
+            self.simplex.insert(edge.index, support)
+        # If we reach here, use the best result found
+        if min_support is not None:
+            direction = self.shapeB.position - self.shapeA.position
+            if min_normal.dot(direction) < 0:
+                min_normal *= -1
+                min_distance *= -1
+            return Collision(self.shapeA, self.shapeB, min_support, min_normal, abs(min_distance))
         return None
 
 def gjk(shapeA: RigidBody, shapeB: RigidBody) -> list[Vector2]:
@@ -228,37 +305,150 @@ def epa(shapeA: RigidBody, shapeB: RigidBody) -> Collision | None:
 class PhysicsWorld:
     def __init__(self):
         self.bodies = []
-        self.gravity = Vector2([0., 9.81])
+        self.gravity = Vector2([0., 981.0])
         self.pixels_per_meter = _get_pixels_per_meter()
+        self.position_correction_factor = 0.8    # More aggressive correction
+        self.penetration_allowance = 0.001      # Smaller penetration allowance
+        self.velocity_threshold = 0.1
+        self.angular_velocity_threshold = 0.01
+        self.resting_threshold = 0.5
+        self.collision_iterations = 4           # Multiple iterations for stability
 
     def _resolve_collision(self, collision: Collision):
-        # Skip if both bodies are static
-        if collision.shapeA.is_static and collision.shapeB.is_static:
+        bodyA = collision.shapeA
+        bodyB = collision.shapeB
+        
+        if bodyA.is_static and bodyB.is_static:
             return
-        # Calculate separation vector - flip the normal direction
-        separation = collision.normal * -collision.overlap
-        # If both bodies can move, split the separation between them
-        if not collision.shapeA.is_static and not collision.shapeB.is_static:
-            collision.shapeA.position += separation * 0.5
-            collision.shapeB.position -= separation * 0.5
-        # If only one body can move, move it the full separation distance
-        elif not collision.shapeA.is_static:
-            collision.shapeA.position += separation
-        elif not collision.shapeB.is_static:
-            collision.shapeB.position -= separation
 
-    def update(self, dt: float):
-        for body in self.bodies:
-            if not body.is_static:
-                # body.apply_force(self.gravity * body.mass)
-                body.update(dt * self.pixels_per_meter)
+        # Position correction first - more aggressive for floor collisions
+        correction = max(collision.overlap - self.penetration_allowance, 0.0)
+        correction *= self.position_correction_factor
+        
+        # More aggressive correction if one body is static (like the floor)
+        if bodyA.is_static or bodyB.is_static:
+            correction *= 1.5
+            
+        correction_vector = collision.normal * correction
+        
+        if not bodyA.is_static:
+            bodyA.position -= correction_vector * bodyA.inv_mass
+        if not bodyB.is_static:
+            bodyB.position += correction_vector * bodyB.inv_mass
+
+        # Calculate collision point relative to each body's center
+        ra = collision.intersection - bodyA.position
+        rb = collision.intersection - bodyB.position
+
+        # Calculate relative velocity at collision point
+        va = bodyA.velocity + Vector2([-ra.y, ra.x]) * bodyA.angular_velocity
+        vb = bodyB.velocity + Vector2([-rb.y, rb.x]) * bodyB.angular_velocity
+        rel_velocity = vb - va
+        
+        vel_along_normal = rel_velocity.dot(collision.normal)
+        
+        # Early out if separating
+        if vel_along_normal > 0:
+            return
+
+        # Check for resting contact
+        is_resting = abs(vel_along_normal) < self.resting_threshold
+        
+        # Calculate restitution - reduce for floor collisions
+        restitution = 0.0 if is_resting else min(bodyA.restitution, bodyB.restitution)
+        if bodyA.is_static or bodyB.is_static:
+            restitution *= 0.8  # Reduce bouncing off static objects
+        
+        # Calculate impulse
+        raCrossN = ra.x * collision.normal.y - ra.y * collision.normal.x
+        rbCrossN = rb.x * collision.normal.y - rb.y * collision.normal.x
+        inv_mass_sum = bodyA.inv_mass + bodyB.inv_mass + \
+                      raCrossN * raCrossN * bodyA.inv_inertia + \
+                      rbCrossN * rbCrossN * bodyB.inv_inertia
+
+        if inv_mass_sum <= 0:
+            return
+            
+        j = -(1.0 + restitution) * vel_along_normal / inv_mass_sum
+        
+        # Apply impulse
+        impulse = collision.normal * j
+        
+        if not bodyA.is_static:
+            bodyA.velocity -= impulse * bodyA.inv_mass
+            bodyA.angular_velocity -= raCrossN * j * bodyA.inv_inertia
+        
+        if not bodyB.is_static:
+            bodyB.velocity += impulse * bodyB.inv_mass
+            bodyB.angular_velocity += rbCrossN * j * bodyB.inv_inertia
+
+        # Friction
+        tangent = rel_velocity - (collision.normal * vel_along_normal)
+        if tangent.squared_length > 1e-6:
+            tangent = tangent.normalised
+            friction = min(bodyA.friction, bodyB.friction)
+            
+            # Increase friction for floor collisions
+            if bodyA.is_static or bodyB.is_static:
+                friction *= 1.2
+            
+            jt = -rel_velocity.dot(tangent)
+            jt /= inv_mass_sum
+            
+            if not is_resting:
+                if abs(jt) > j * friction:
+                    jt = j * friction if jt > 0 else -j * friction
+            else:
+                jt *= 0.4  # More friction for resting contacts
+            
+            friction_impulse = tangent * jt
+            
+            if not bodyA.is_static:
+                bodyA.velocity -= friction_impulse * bodyA.inv_mass
+                bodyA.angular_velocity -= (ra.x * friction_impulse.y - ra.y * friction_impulse.x) * bodyA.inv_inertia
+            
+            if not bodyB.is_static:
+                bodyB.velocity += friction_impulse * bodyB.inv_mass
+                bodyB.angular_velocity += (rb.x * friction_impulse.y - rb.y * friction_impulse.x) * bodyB.inv_inertia
 
     def resolve(self):
-        for i in range(len(self.bodies)):
-            for j in range(i + 1, len(self.bodies)):  # Changed to avoid duplicate checks
-                collision = epa(self.bodies[i], self.bodies[j])
-                if collision:
-                    self._resolve_collision(collision)
+        # Multiple iterations of collision resolution
+        for _ in range(self.collision_iterations):
+            # Sort collisions by overlap for more stable resolution
+            collisions = []
+            for i in range(len(self.bodies)):
+                for j in range(i + 1, len(self.bodies)):
+                    collision = epa(self.bodies[i], self.bodies[j])
+                    if collision:
+                        collisions.append(collision)
+            
+            # Sort by overlap (resolve biggest overlaps first)
+            collisions.sort(key=lambda c: c.overlap, reverse=True)
+            
+            # Resolve all collisions
+            for collision in collisions:
+                self._resolve_collision(collision)
+
+    def update(self, dt: float):
+        dt = min(dt, 1.0/60.0)
+        
+        for body in self.bodies:
+            if not body.is_static:
+                # Apply gravity
+                body.apply_force(self.gravity * body.mass)
+                
+                # Update velocities and position
+                body.update(dt)
+                
+                # Stop very small movements, but handle vertical and horizontal separately
+                if abs(body.velocity.y) < self.velocity_threshold:
+                    body.velocity.y = 0
+                if abs(body.velocity.x) < self.velocity_threshold:
+                    body.velocity.x = 0
+                
+                # Stop very small rotations
+                if abs(body.angular_velocity) < self.angular_velocity_threshold:
+                    body.angular_velocity = 0.0
 
     def draw(self):
         for body in self.bodies:
@@ -269,30 +459,66 @@ class PhysicsWorld:
         self.resolve()
         self.draw()
 
-r.init_window(1280, 800, "i love physics i am a physics engine")
+r.init_window(1280, 800, "i hate physics i am a fucked up physics engine")
 
 world = PhysicsWorld()
 
-circle = CircleBody(Vector2([150., 350.]), 10., is_static=False)
-rectangle = RectangleBody(Vector2([100., 300.]), 50., 50., is_static=True)
-pentagon = PolygonBody([Vector2([200., 300.]),
-                        Vector2([235., 330.]),
-                        Vector2([220., 370.]),
-                        Vector2([180., 370.]),
-                        Vector2([165., 330.])], is_static=True)
+# Create floor
+floor = RectangleBody(Vector2([0., 750.]), 1280., 50., is_static=True)
+floor.friction = 0.8     # Higher friction for floor
+floor.restitution = 0.2  # Less bouncy floor
 
-world.bodies.append(circle)
-world.bodies.append(rectangle)
-world.bodies.append(pentagon)
+# Create falling objects
+circle = CircleBody(Vector2([150., 50.]), 10., mass=1.0)
+circle.restitution = 0.4
+circle.friction = 0.4
+circle.damping = 0.995
+circle.angular_damping = 0.995
+circle.angular_velocity = 10.0
+
+# Create a rectangle that will fall and rotate
+falling_rect = RectangleBody(Vector2([300., 50.]), 40., 20., mass=1.0)
+falling_rect.restitution = 0.4
+falling_rect.friction = 0.4
+falling_rect.damping = 0.995
+falling_rect.angular_damping = 0.995
+falling_rect.angle = 0.5
+falling_rect.angular_velocity = -5.0
+
+# Static rectangle obstacle
+rectangle = RectangleBody(Vector2([100., 300.]), 50., 50., is_static=True)
+rectangle.restitution = 0.4
+rectangle.friction = 0.4
+
+# Static pentagon obstacle
+pentagon = PolygonBody([Vector2([200., 300.]),
+                       Vector2([235., 330.]),
+                       Vector2([220., 370.]),
+                       Vector2([180., 370.]),
+                       Vector2([165., 330.])],
+                      is_static=True)
+pentagon.restitution = 0.4
+pentagon.friction = 0.4
+
+# Add all bodies to the world
+world.bodies.extend([floor, circle, falling_rect, rectangle, pentagon])
 
 while not r.window_should_close():
     r.begin_drawing()
     r.clear_background(r.RAYWHITE)
     
-    mxy = r.get_mouse_position()
-    circle.position = Vector2([mxy.x, mxy.y])
-    
     world.step(r.get_frame_time())
+    
+    # Debug drawing - show rotation
+    for body in world.bodies:
+        if isinstance(body, CircleBody):
+            # Draw a line from center to edge to show rotation
+            end = Vector2([
+                body.position.x + body.radius * math.cos(body.angle),
+                body.position.y + body.radius * math.sin(body.angle)
+            ])
+            r.draw_line(int(body.position.x), int(body.position.y),
+                       int(end.x), int(end.y), r.BLUE)
  
     r.end_drawing()
 
