@@ -61,7 +61,7 @@ class Scene(FiniteStateMachine, ActorParent):
         pass
 
     def step(self, delta):
-        for child in self.all_children():
+        for child in reversed(self.all_children()):
             child.step(delta)
 
     def step_background(self, delta):
@@ -71,7 +71,7 @@ class Scene(FiniteStateMachine, ActorParent):
     def draw(self):
         r.clear_background(self.clear_color)
         r.begin_mode_2d(self.camera)
-        for child in self.all_children():
+        for child in reversed(self.all_children()):
             child.draw()
         r.end_mode_2d()
 

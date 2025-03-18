@@ -6,7 +6,7 @@
 2D scene+actor framework built on top of [raylib](https://github.com/raysan5/raylib), based off [SpriteKit](https://developer.apple.com/documentation/spritekit) by Apple.
 
 > [!NOTE]
-> `pip install spritekit==0.1.0`
+> `pip install spritekit==0.1.1`
 
 ### Features
 
@@ -87,13 +87,10 @@ class TestScene(sk.Scene):
 ## Requirements
 
 ```
-cffi==1.17.1
-multipledispatch==1.0.0
 numpy==2.2.2
-pycparser==2.22
 raylib==5.5.0.2
-six==1.17.0
 transitions==0.9.2
+slimrr==0.1.0
 ```
 
 ## TODO

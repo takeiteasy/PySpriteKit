@@ -19,8 +19,9 @@ import pyray as r
 import raylib as rl
 import os
 import pathlib
+from enum import Enum
 
-__all__ = ["Image", "Texture", "Shader", "ShaderFromMemory", "Model", "Wave", "Sound", "Music", "Font", "Keys", "Flags", "Keyboard", "Gamepad", "Mouse", "Color", "Rectangle", "unload_cache"]
+__all__ = ["Image", "Texture", "TextureFromImage", "Shader", "ShaderFromMemory", "Model", "Wave", "Sound", "Music", "Font", "Keys", "Flags", "Keyboard", "Gamepad", "Mouse", "Color", "Rectangle", "unload_cache"]
 
 __SKPATH__ = pathlib.Path(__file__).parent
 __SKDATA__ = "assets"
@@ -53,37 +54,49 @@ def find_file(name, extensions, folders):
             return file
     raise Exception(f"file {name} does not exist")
 
-def cache_result(func):
-    def wrapper(*args, **kwargs):
-        key = args[0]  # Get the file path argument
-        if key in __cache:
-            return __cache[key]
-        result = func(*args, **kwargs)
-        __cache[key] = result
-        return result
-    return wrapper
+class CacheEntry(Enum):
+    MODEL = 0
+    TEXTURE = 1
+    IMAGE = 2
+    FONT = 3
+    WAVE = 4
+    SOUND = 5
+    MUSIC = 6
+
+def cache_result(ctype):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            key = args[0]  # Get the file path argument
+            if key in __cache:
+                return __cache[key][0]
+            result = func(*args, **kwargs)
+            __cache[key] = (result, ctype)
+            return result
+        return wrapper
+    return decorator
 
 def _unload_asset(key: str):
-    k = __cache[k]
-    if isinstance(k, r.Model):
-        r.unload_model(k)
-    elif isinstance(k, r.Texture):
-        r.unload_texture(k)
-    elif isinstance(k, r.Image):
-        r.unload_image(k)
-    elif isinstance(k, r.Font):
-        r.unload_font(k)
-    elif isinstance(k, r.Wave):
-        r.unload_wave(k)
-    elif isinstance(k, r.Sound):
-        r.unload_sound(k)
-    elif isinstance(k, r.Music):
-        r.unload_music_stream(k)
-    else:
-        try:
-            del k
-        except:
-            pass
+    result, ctype = __cache[key]
+    match ctype:
+        case CacheEntry.MODEL:
+            r.unload_model(result)
+        case CacheEntry.TEXTURE:
+            r.unload_texture(result)
+        case CacheEntry.IMAGE:
+            r.unload_image(result)
+        case CacheEntry.FONT:
+            r.unload_font(result)
+        case CacheEntry.WAVE:
+            r.unload_wave(result)
+        case CacheEntry.SOUND:
+            r.unload_sound(result)
+        case CacheEntry.MUSIC:
+            r.unload_music_stream(result)
+        case _:
+            try:
+                del k
+            except:
+                pass
     __cache.pop(key)
 
 def unload_cache(key: str = None):
@@ -96,13 +109,16 @@ def unload_cache(key: str = None):
 def _file_locations(name):
     return ['.', f"assets/{name}", name]
 
-@cache_result
+@cache_result(ctype=CacheEntry.IMAGE)
 def Image(file: str):
     return r.load_image(find_file(file, __image_extensions, _file_locations('textures')))
 
-@cache_result
+@cache_result(ctype=CacheEntry.TEXTURE)
 def Texture(file: str):
     return r.load_texture(find_file(file, __image_extensions, _file_locations('textures')))
+
+def TextureFromImage(image: r.Image):
+    return r.load_texture_from_image(image)
 
 def Shader(vertex_file: str, fragment_file: str):
     return r.load_shader(find_file(vertex_file, __vshader_extensions, _file_locations('shaders')),
@@ -111,15 +127,15 @@ def Shader(vertex_file: str, fragment_file: str):
 def ShaderFromMemory(vertex: str, fragment: str):
     return r.load_shader_from_memory(vertex, fragment)
 
-@cache_result
+@cache_result(ctype=CacheEntry.MODEL)
 def Model(file: str):
     return r.load_model(find_file(file, __model_extensions, _file_locations('models')))
 
-@cache_result
+@cache_result(ctype=CacheEntry.WAVE)
 def Wave(file: str):
     return r.load_wave(find_file(file, __sound_extensions, _file_locations('audio')))
 
-@cache_result
+@cache_result(ctype=CacheEntry.SOUND)
 def Sound(file):
     if isinstance(file, r.Wave):
         return r.load_sound_from_wave(file)
@@ -128,11 +144,11 @@ def Sound(file):
             return r.load_sound(find_file(file, __sound_extensions, _file_locations('audio')))
         return _load(file)
 
-@cache_result
+@cache_result(ctype=CacheEntry.MUSIC)
 def Music(file: str):
     return r.load_music_stream(find_file(file, __sound_extensions, _file_locations('audio')))
 
-@cache_result
+@cache_result(ctype=CacheEntry.FONT)
 def Font(file: str):
     return r.load_font(find_file(file, __font_extensions, _file_locations('fonts')))
 

@@ -54,8 +54,10 @@
 #   ---------------------------------------------------------------------------------
 
 from math import asin, cos, pi, sin, sqrt
+from random import choice as random_choice
+from typing import Callable
 
-__all__ = [
+__all = [
     'ease_linear_none',
     'ease_linear_in',
     'ease_linear_out',
@@ -84,6 +86,7 @@ __all__ = [
     'ease_elastic_in',
     'ease_elastic_out',
     'ease_elastic_in_out',
+    'random_ease'
 ]
 
 
@@ -312,3 +315,18 @@ def ease_elastic_in_out(t: float, b: float, c: float, d: float) -> float:
     else:
         t = t - 1
         return a * (2 ** (-10 * t)) * sin((t * d - s) * (2 * pi) / p) * 0.5 + c + b
+
+def random_ease() -> Callable[[float, float, float, float], float]:
+    # Create a list of actual functions instead of their names
+    functions = [
+        ease_linear_none, ease_linear_in, ease_linear_out, ease_linear_in_out,
+        ease_sine_in, ease_sine_out, ease_sine_in_out,
+        ease_circ_in, ease_circ_out, ease_circ_in_out,
+        ease_cubic_in, ease_cubic_out, ease_cubic_in_out,
+        ease_quad_in, ease_quad_out, ease_quad_in_out,
+        ease_expo_in, ease_expo_out, ease_expo_in_out,
+        ease_back_in, ease_back_out, ease_back_in_out,
+        ease_bounce_in, ease_bounce_out, ease_bounce_in_out,
+        ease_elastic_in, ease_elastic_out, ease_elastic_in_out
+    ]
+    return random_choice(functions)

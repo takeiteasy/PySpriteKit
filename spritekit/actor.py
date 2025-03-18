@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .math import Vector2
+from slimrr import Vector2
 from dataclasses import dataclass, field
 from typing import Optional, override, Callable, Type, Any
 import raylib as rl
@@ -26,7 +26,7 @@ from queue import Queue
 
 __all__ = ["LineNode", "RectangleNode", "CircleNode", "TriangleNode", "EllipseNode", "SpriteNode",
            "LabelNode", "MusicNode", "SoundNode", "TimerNode", "ActionNode", "ActionSequence",
-           "WaitAction", "EmitterNode"]
+           "WaitAction", "EmitterNode", "Actor"]
 
 class ActorType:
     pass
@@ -93,11 +93,11 @@ class Actor(ActorType, ActorParent):
             self.scene.remove_child(self)
 
     def step(self, delta: float):
-        for child in self.all_children():
+        for child in reversed(self.all_children()):
             child.step(delta)
 
     def draw(self):
-        for child in self.all_children():
+        for child in reversed(self.all_children()):
             child.draw()
 
 @dataclass
@@ -190,7 +190,7 @@ class ActionType:
 
 @dataclass
 class ActionNode(ActionType, TimerNode):
-    easing_fn: Callable[[float, float, float, float], float] = staticmethod(ease_linear_in_out)
+    easing: Callable[[float, float, float, float], float] = staticmethod(ease_linear_in_out)
     actor: Optional[Actor] = None
     field: Optional[str | list[str]] = None
     target: Any = None
@@ -230,8 +230,8 @@ class ActionNode(ActionType, TimerNode):
             raise RuntimeError("Target is not set")
         self.field = self.field if isinstance(self.field, list) else self.field.split(".") if "." in self.field else [self.field]
         self._initial_value()
-        if "easing_fn" in kwargs:
-            self.easing_fn = staticmethod(kwargs.pop("easing_fn"))
+        if "easing" in kwargs:
+            self.easing = staticmethod(kwargs.pop("easing"))
         self._start = None
         self.on_complete = self.remove_me
         self.on_tick = self._step
@@ -254,14 +254,13 @@ class ActionNode(ActionType, TimerNode):
         for i in range(len(self.field)):
             if i == len(self.field) - 1:
                 def fn(x, y, z, w):
-                    return self.easing_fn(x, y, z, w)
+                    return self.easing(x, y, z, w)
                 f = getattr(obj, self.field[i])
-                if isinstance(f, float):
-                    setattr(obj, self.field[i], fn(elapsed, self._start, delta, self.duration))
+                if isinstance(f, float) or isinstance(f, int):
+                    v = type(f)(fn(elapsed, self._start, delta, self.duration))
+                    setattr(obj, self.field[i], v)
                 else:
                     z = list(zip(self._start, delta))
-                    for start, delta in z:
-                        print(start, delta)
                     v = [fn(elapsed, start, delta, self.duration) for start, delta in z]
                     setattr(obj, self.field[i], v)
             else:
@@ -348,7 +347,10 @@ class ActionSequence(ActionType, TimerNode, Queue):
         self._complete()
 
 class EmitterNode(TimerNode):
-    def __init__(self, emit: Callable[[], Actor] | tuple[Type[Actor], dict] = None,  duration: float = 1., auto_start: bool = True):
+    def __init__(self,
+                 emit: Callable[[], Actor] | tuple[Type[Actor], dict] = None,
+                 duration: float = 1.,
+                 auto_start: bool = True):
         if callable(emit):
             self._emit = staticmethod(emit)
         else:
@@ -375,7 +377,7 @@ class Actor2D(Actor):
     rotation: float = 0.
     scale: float = 1.
     origin: Vector2 = field(default_factory=lambda: Vector2([0.5, 0.5]))
-    color: r.Color = r.RAYWHITE
+    color: r.Color = r.WHITE
 
     def _offset(self):
         return self.position + self.origin * Vector2([-self.width, -self.height])
@@ -397,13 +399,15 @@ class ShapeActor(BaseShape):
 
 @dataclass
 class LineNode(ShapeActor):
-    draw_func = rl.DrawLine
-    draw_wire_func = rl.DrawLine
+    draw_func = rl.DrawLineEx
+    draw_wire_func = rl.DrawLineEx
     end: Vector2 = field(default_factory=Vector2)
+    thickness: float = 1.
 
     @override
     def draw(self):
-        self._draw(self.position.x, self.position.y, self.end.x, self.end.y, self.color)
+        self._draw([*self.position], [*self.end], self.thickness, self.color)
+        super().draw()
 
 @dataclass
 class RectangleNode(ShapeActor):
@@ -419,6 +423,7 @@ class RectangleNode(ShapeActor):
             self._draw(rec, self.line_thickness, self.color)
         else:
             self._draw(rec, self.color)
+        super().draw()
 
 @dataclass
 class CircleNode(ShapeActor):
@@ -429,6 +434,7 @@ class CircleNode(ShapeActor):
     @override
     def draw(self):
         self._draw(int(self.position.x), int(self.position.y), self.radius, self.color)
+        super().draw()
 
 @dataclass
 class TriangleNode(ShapeActor):
@@ -446,6 +452,7 @@ class TriangleNode(ShapeActor):
         if cross(stri[0], stri[1], stri[2]) > 0:
             stri[1], stri[2] = stri[2], stri[1]
         self._draw([*stri[0]], [*stri[1]], [*stri[2]], self.color)
+        super().draw()
 
 @dataclass
 class EllipseNode(ShapeActor):
@@ -457,6 +464,7 @@ class EllipseNode(ShapeActor):
     @override
     def draw(self):
         self._draw(self.position.x, self.position.y, self.width, self.height, self.color)
+        super().draw()
 
 @dataclass
 class SpriteNode(ShapeActor):
@@ -475,16 +483,16 @@ class SpriteNode(ShapeActor):
 
     @override
     def draw(self):
-        if not self.texture:
-            return
-        if self.source.width == 0 or self.source.height == 0:
-            self.source = r.Rectangle(0, 0, self.texture.width, self.texture.height)
-        if self.dst.width == 0 or self.dst.height == 0:
-            self.dst = r.Rectangle(self.position.x, self.position.y, self.width, self.height)
-        r.draw_texture_pro(self.texture,
-                           [self.source.x, self.source.y, self.source.width, self.source.height],
-                           [self.dst.x, self.dst.y, self.dst.width * self.scale.x, self.dst.height * self.scale.y],
-                           [*(-self._offset() * self.scale)], self.rotation, self.color)
+        if self.texture:
+            if self.source.width == 0 or self.source.height == 0:
+                self.source = r.Rectangle(0, 0, self.texture.width, self.texture.height)
+            if self.dst.width == 0 or self.dst.height == 0:
+                self.dst = r.Rectangle(self.position.x, self.position.y, self.width, self.height)
+            r.draw_texture_pro(self.texture,
+                            [self.source.x, self.source.y, self.source.width, self.source.height],
+                            [self.dst.x, self.dst.y, self.dst.width * self.scale.x, self.dst.height * self.scale.y],
+                            [*(-self._offset() * self.scale)], self.rotation, self.color)
+        super().draw()
 
 @dataclass
 class LabelNode(ShapeActor):
@@ -520,6 +528,7 @@ class LabelNode(ShapeActor):
         if not self.font:
             self.font = r.get_font_default()
         r.draw_text_pro(self.font, self.text, [0,0], [*-self._offset()], self.rotation, self.font_size, self.spacing, self.color)
+        super().draw()
 
 class AudioActor(Actor):
     volume: float = 1.
@@ -645,10 +654,10 @@ class MusicNode(AudioActor):
         else:
             self.play()
 
-    def step(self, _: float):
-        if not self.playing:
-            return
-        r.update_music_stream(self.audio)
-        if not self.playing:
-            self.position = 0
-            self.play()
+    def step(self, delta: float):
+        if self.playing:
+            r.update_music_stream(self.audio)
+            if not self.playing and self.loop:
+                self.position = 0
+                self.play()
+        super().step(delta)
