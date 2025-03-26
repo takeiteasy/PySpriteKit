@@ -23,6 +23,7 @@ import pyray as r
 from .easing import ease_linear_in_out
 from contextlib import contextmanager
 from queue import Queue
+from uuid import uuid4
 
 __all__ = ["LineNode", "RectangleNode", "CircleNode", "TriangleNode", "EllipseNode", "SpriteNode",
            "LabelNode", "MusicNode", "SoundNode", "TimerNode", "ActionNode", "ActionSequence",
@@ -78,7 +79,7 @@ class ActorParent:
 
 @dataclass
 class Actor(ActorType, ActorParent):
-    name: str = ""
+    name: str = field(default_factory=lambda: uuid4().hex)
 
     def __str__(self):
         return f"(Node({self.__class__.__name__}) {" ".join([f"{key}:{getattr(self, key)}" for key in list(vars(self).keys())])})"
@@ -91,6 +92,8 @@ class Actor(ActorType, ActorParent):
     def remove_me(self):
         if hasattr(self, "scene") and self.scene is not None:
             self.scene.remove_child(self)
+        if hasattr(self, "parent") and self.parent is not None:
+            self.parent.remove_child(self)
 
     def step(self, delta: float):
         for child in reversed(self.all_children()):
@@ -112,7 +115,7 @@ class BaseTimer(Actor):
 
 class TimerNode(BaseTimer):
     def __init__(self, **kwargs):
-        BaseTimer.__init__(self, **kwargs)
+        super().__init__(**kwargs)
         self._completed = False
         self._running = self.auto_start
         if self.repeat is None:
@@ -125,7 +128,7 @@ class TimerNode(BaseTimer):
         self._initial_repeat = self.repeat
         if self.cursor is None:
             self.cursor = self.duration if self._running else 0
-        if not self.remove_on_complete:
+        if self.remove_on_complete is None:
             if isinstance(self.repeat, bool):
                 self.remove_on_complete = not self.repeat
             elif isinstance(self.repeat, int):
@@ -134,7 +137,7 @@ class TimerNode(BaseTimer):
                 self.remove_on_complete = False
 
     def step(self, delta: float):
-        if not self._running:
+        if not self._running or self._completed:
             return
         if self.cursor is not None and self.cursor > 0:
             self.cursor -= delta
