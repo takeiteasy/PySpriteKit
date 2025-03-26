@@ -16,33 +16,70 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .actor import ActorType, ActorParent
-from .fsm import FiniteStateMachine
-import pyray as r
 from typing import override
 import atexit
+from typing import Optional
+from dataclasses import dataclass, field
+from enum import Enum
 
-__all__ = ["Scene", "main_scene"]
+import transitions as t
+import quickwindow as qw
+import raudio as r
+import OpenGL.GL as GL
+
+__all__ = ["Scene", "main", "Transition", "FiniteStateMachine"]
 
 __scene__ = []
 __next_scene = None
 __drop_scene = None
+
+@dataclass
+class Transition:
+    trigger: str
+    source: str | Enum | list
+    dest: str | Enum
+    conditions: Optional[str | list[str]] = None
+    unless: Optional[str | list[str]] = None
+    before: Optional[str | list[str]] = None
+    after: Optional[str | list[str]] = None
+    prepare: Optional[str | list[str]] = None
+    kwargs: dict = field(default_factory=dict)
+
+    def explode(self):
+        transition_args = {k: v for k, v in self.__dict__.items() if k != 'kwargs' and v is not None}
+        transition_args.update(**self.kwargs)  # unpack kwargs
+        return transition_args
+
+class FiniteStateMachine:
+    states: list[str | t.State] = []
+    transitions: list[dict | Transition] = []
+
+    def __init__(self, **kwargs):
+        if self.__class__.states:
+            if not "initial" in kwargs:
+                kwargs["initial"] = self.__class__.states[0]
+            self.fsm = t.Machine(model=self,
+                                 states=self.__class__.states,
+                                 transitions=[t.explode() if isinstance(t, Transition) else t for t in self.__class__.transitions],
+                                 **kwargs)
+        else:
+            self.fsm = None
 
 class Scene(FiniteStateMachine, ActorParent):
     config: dict = {}
 
     def __init__(self, **kwargs):
         FiniteStateMachine.__init__(self, **kwargs)
-        self.camera = r.Camera2D()
-        self.camera.target = 0, 0
-        self.camera.offset = r.Vector2(r.get_screen_width() / 2, r.get_screen_height() / 2)
-        self.camera.zoom = 1.
-        self.clear_color = r.RAYWHITE
+        self.target = (0, 0)
+        self.offset = (0, 0)
+        self.zoom = 1.
+        self.clear_color = (1., 1., 1., 1.)
         self.run_in_background = False
         self.assets = {} # TODO: Store and restore assets to __cache in raylib.py
 
     @override
     def add_child(self, node: ActorType):
-        if node:
+        if node and isinstance(node, ActorType):
             node.__dict__["scene"] = self
             self._add_child(node)
         else:
@@ -51,7 +88,7 @@ class Scene(FiniteStateMachine, ActorParent):
     def enter(self):
         pass
 
-    def reenter(self):
+    def restored(self):
         pass
 
     def background(self):
@@ -69,11 +106,8 @@ class Scene(FiniteStateMachine, ActorParent):
             self.step(delta)
 
     def draw(self):
-        r.clear_background(self.clear_color)
-        r.begin_mode_2d(self.camera)
-        for child in reversed(self.all_children()):
-            child.draw()
-        r.end_mode_2d()
+        GL.glClearColor(*self.clear_color)
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT) # type: ignore
 
     def draw_background(self):
         if self.run_in_background:
@@ -121,60 +155,52 @@ class Scene(FiniteStateMachine, ActorParent):
     def height(self):
         return r.get_screen_height()
 
-def main_scene(cls):
+def main(cls):
     global __scene__, __drop_scene, __next_scene
     if __scene__:
         raise RuntimeError("There can only be one @main_scene")
-    r.init_window(cls.config['width'] if "width" in cls.config else 800,
-                  cls.config['height'] if "height" in cls.config else 600,
-                  cls.config['title'] if "title" in cls.config else "spritekit")
-    r.set_config_flags(cls.config['flags'] if "flags" in cls.config else r.ConfigFlags.FLAG_WINDOW_RESIZABLE)
-    r.init_audio_device()
-    def cleanup():
-        r.close_audio_device()
-        r.close_window()
-    atexit.register(cleanup)
-    if "fps" in cls.config:
-        r.set_target_fps(cls.config['fps'])
-    if "exit_key" in cls.config:
-        r.set_exit_key(cls.config['exit_key'])
-    scn = cls()
-    __scene__.append(scn)
-    scn.enter()
-    while not r.window_should_close() and __scene__:
-        dt = r.get_frame_time()
-        if len(__scene__) > 1:
-            for _scn in __scene__[:-1]:
-                _scn.step_background(dt)
-        scn.step(dt)
-        r.begin_drawing()
-        if len(__scene__) > 1:
-            for _scn in __scene__[:-1]:
-                _scn.draw_background()
-        scn.draw()
-        r.end_drawing()
-        if __drop_scene:
-            if isinstance(__drop_scene, list):
-                for _scn in reversed(__drop_scene):
-                    _scn.exit()
-            elif isinstance(__drop_scene, Scene):
-                __drop_scene.exit()
-            else:
-                raise RuntimeError("Invalid Scene")
-            __scene__ = __scene__[:-len(__drop_scene)]
-            if __scene__:
-                scn = __scene__[-1]
-                scn.reenter()
-            __drop_scene = None
-        if __next_scene:
-            if isinstance(__next_scene, Scene):
-                if __scene__:
-                    __scene__[-1].background()
-                __scene__.append(__next_scene)
-                scn = __next_scene
-                scn.enter()
-                __next_scene = None
-            else:
-                raise RuntimeError("Invalid Scene")
-    return cls
+    with qw.quick_window(**cls.config) as wnd:
+        r.initialize()
+        atexit.register(r.shutdown)
+        scn = cls()
+        __scene__.append(scn)
+        scn.enter()
 
+        for dt in wnd.loop():
+            if not __scene__:
+                break
+            for e in wnd.events():
+                pass
+
+            if len(__scene__) > 1:
+                for _scn in __scene__[:-1]:
+                    _scn.step_background(dt)
+            scn.step(dt)
+            if len(__scene__) > 1:
+                for _scn in __scene__[:-1]:
+                    _scn.draw_background()
+            scn.draw()
+            if __drop_scene:
+                if isinstance(__drop_scene, list):
+                    for _scn in reversed(__drop_scene):
+                        _scn.exit()
+                elif isinstance(__drop_scene, Scene):
+                    __drop_scene.exit()
+                else:
+                    raise RuntimeError("Invalid Scene")
+                __scene__ = __scene__[:-len(__drop_scene)]
+                if __scene__:
+                    scn = __scene__[-1]
+                    scn.restored()
+                __drop_scene = None
+            if __next_scene:
+                if isinstance(__next_scene, Scene):
+                    if __scene__:
+                        __scene__[-1].background()
+                    __scene__.append(__next_scene)
+                    scn = __next_scene
+                    scn.enter()
+                    __next_scene = None
+                else:
+                    raise RuntimeError("Invalid Scene")
+    return cls
