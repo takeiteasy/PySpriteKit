@@ -1,5 +1,8 @@
-trivial-graphics==0.0.8
 transitions==0.9.2
-slimrr==0.1.0
+pyglm==2.8.1
 raudio==0.0.1
-quickwindow==0.0.1
+quickwindow==0.1.0
+moderngl==5.12.0
+numpy==2.2.4
+pillow==11.1.0
+pyglsl==0.1.0
