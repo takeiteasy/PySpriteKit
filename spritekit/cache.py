@@ -23,20 +23,20 @@ from PIL import Image
 
 __cache__ = {}
 __SKPATH__ = pathlib.Path(__file__).parent
-__SKDATA__ = "assets"
+__data_path__ = "assets"
 
 def _generate_paths(name, root, extension):
-    return root + os.path.sep + name + extension, __SKDATA__ + os.path.sep + root + os.path.sep + name + extension, str(__SKPATH__ / root / name) + extension
+    return root + os.path.sep + name + extension, __data_path__ + os.path.sep + root + os.path.sep + name + extension, str(__SKPATH__ / root / name) + extension
 
-def _find_file(file_path, folder_name, extensions):
+def _find_file(file_path, folder_names, extensions):
     if os.path.isfile(file_path):
         return file_path
     _, ext = os.path.splitext(file_path)
     if ext not in extensions:
-        raise RuntimeError(f"file {file_path} has invalid extension {ext}, supported extensions: {', '.join(extensions)}")
+        raise RuntimeError(f"File '{file_path}' has invalid extension {ext}, supported extensions: {', '.join(extensions)}")
     else:
         extensions = ext
-    folders = ['.', f"assets/{folder_name}", folder_name]
+    folders = [d for dir in folder_names for d in ['.', f"{__data_path__}/{dir}", dir]]
     paths = []
     for folder in folders:
         if isinstance(extensions, list):
@@ -47,21 +47,75 @@ def _find_file(file_path, folder_name, extensions):
     found = list(set([os.path.abspath(p) for p in paths if os.path.isfile(p)]))
     match len(found):
         case 0:
-            raise RuntimeError(f"file {file_path} not found")
+            raise RuntimeError(f"File '{file_path}' not found")
         case 1:
             return found[0]
         case _:
-            raise RuntimeError(f"file {file_path} has multiple matches: {found}")
+            raise RuntimeError(f"File '{file_path}' has multiple matches: {', '.join(found)}")
+
+def _check_cache(type_name, path):
+    if not type_name in __cache__:
+        __cache__[type_name] = {}
+    return __cache__[type_name][path] if path in __cache__[type_name] else None
+
+def _ensure_cached(type_name, folder_names, extensions):
+    def decorator(func):
+        def wrapper(path, **kwargs):
+            found = _find_file(path, folder_names, extensions)
+            cached = _check_cache(type_name, found)
+            if cached:
+                return cached
+            result = func(found, **kwargs)
+            __cache__[type_name][found] = result
+            return result
+        return wrapper
+    return decorator
 
 __image_extensions__ = ['.blp', '.bmp', '.dib', '.bufr', '.cur', '.pcx', '.dcx', '.dds', '.ps', '.eps', '.fit', '.fits', '.fli', '.flc', '.ftc', '.ftu', '.gbr', '.gif', '.grib', '.h5', '.hdf', '.png', '.apng', '.jp2', '.j2k', '.jpc', '.jpf', '.jpx', '.j2c', '.icns', '.ico', '.im', '.iim', '.jfif', '.jpe', '.jpg', '.jpeg', '.mpg', '.mpeg', '.tif', '.tiff', '.mpo', '.msp', '.palm', '.pcd', '.pdf', '.pxr', '.pbm', '.pgm', '.ppm', '.pnm', '.pfm', '.psd', '.qoi', '.bw', '.rgb', '.rgba', '.sgi', '.ras', '.tga', '.icb', '.vda', '.vst', '.webp', '.wmf', '.emf', '.xbm', '.xpm']
 __audio_extensions__ = ['.wav', '.mp3', '.ogg', '.flac', '.xm', '.mod', '.qoa']
+__image_folders__ = ("textures", "images", "sprites")
+__audio_folders__ = ("audio", "music", "sfx")
 
+def _load_image(name, flip=True):
+    img = Image.open(name).convert('RGBA')
+    if flip:
+        img = img.transpose(Image.FLIP_TOP_BOTTOM)
+    return img
+
+@_ensure_cached(type_name="images",
+                folder_names=__image_folders__,
+                extensions=__image_extensions__)
 def load_image(name, flip=True):
-    pass
+    return _load_image(name, flip)
 
-def unload_cache():
-    for v in __cache__.values():
-        del v
+@_ensure_cached(type_name="textures",
+                folder_names=__image_folders__,
+                extensions=__image_extensions__)
+def load_texture(name, flip=True, mipmaps=True, cache_image=False):
+    ctx = moderngl.get_context()
+    img = load_image(name, flip=flip) if cache_image else _load_image(name, flip)
+    texture = ctx.texture(img.size, 4, img.tobytes())
+    if mipmaps:
+        texture.build_mipmaps()
+    return texture
+
+@_ensure_cached(type_name="waves",
+                folder_names=__audio_folders__,
+                extensions=__audio_extensions__)
+def load_wave(name):
+    return Wave(name)
+
+@_ensure_cached(type_name="music",
+                folder_names=__audio_folders__,
+                extensions=__audio_extensions__)
+def load_music(name):
+    return Music(name)
+
+def set_data_path(path):
+    global __data_path__
+    __data_path__ = path
+
+def clear_cache():
     __cache__.clear()
 
-__all__ = ["load_image", "load_texture", "load_audio", "load_music", "unload_cache"]
+__all__ = ["load_image", "load_texture", "load_wave", "load_music", "clear_cache", "set_data_path"]

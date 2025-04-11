@@ -8,6 +8,8 @@ import platform
 import numpy as np
 from PIL import Image
 
+from spritekit.cache import *
+
 def _rotate_point(x, y, c, s):
     return glm.vec2(x * c - y * s, x * s + y * c)
 
@@ -56,7 +58,7 @@ class Renderer:
         self._ctx = moderngl.get_context()
         self._program = self._ctx.program(vertex_shader=VertexStage(default_vertex).compile(),
                                           fragment_shader=FragmentStage(default_fragment).compile())
-        self._size = quickwindow.size()
+        self.size = quickwindow.size()
         self._view = None
         self._update_view()
         self._dirty = True
@@ -104,8 +106,7 @@ class Renderer:
 
 with quickwindow.quick_window(quit_key=quickwindow.Keys.ESCAPE) as wnd:
     renderer = Renderer()
-    image = Image.open('assets/textures/pear.jpg')
-    texture = renderer.load_texture(image)
+    texture = load_texture("pear.jpg")
     rect = _rect_vertices(0, 0, 100, 100)
     mesh = Mesh(renderer._program, rect)
     for delta, events in wnd.loop():
