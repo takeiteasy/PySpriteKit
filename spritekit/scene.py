@@ -17,8 +17,10 @@
 
 from typing import Optional
 
-from .actors import Parent
-from .renderer import Renderer
+from .actor import Parent
+from .renderer import get_viewport, get_clear_color, set_viewport, set_clear_color 
+
+import quickwindow
 
 class Scene(Parent):
     config: dict = {}
@@ -28,19 +30,24 @@ class Scene(Parent):
                  clear_color: tuple[float, float, float, float] = (0, 0, 0, 1),
                  **kwargs):
         Parent.__init__(self)
-        self._renderer = Renderer(viewport=viewport, clear_color=clear_color)
+        self.viewport = viewport if viewport is not None else quickwindow.size()
+        self.clear_color = clear_color
     
     @property
-    def renderer(self):
-        return self._renderer
+    def viewport(self):
+        return get_viewport()
+    
+    @viewport.setter
+    def viewport(self, value: tuple[int, int]):
+        set_viewport(value)
     
     @property
-    def size(self):
-        return self._renderer.size
+    def clear_color(self):
+        return get_clear_color()
     
-    @size.setter
-    def size(self, value):
-        self._renderer.size = value
+    @clear_color.setter
+    def clear_color(self, value: tuple[float, float, float, float]):
+        set_clear_color(value)
     
     def enter(self):
         pass
@@ -53,6 +60,5 @@ class Scene(Parent):
             child.step(delta)
 
     def draw(self):
-        for child in self.each():
+        for child in self.each(reverse=True):
             child.draw()
-        self.renderer.flush()

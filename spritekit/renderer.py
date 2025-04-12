@@ -31,17 +31,16 @@ from spritekit.cache import *
 def _rotate_point(x, y, c, s):
     return glm.vec2(x * c - y * s, x * s + y * c)
 
-def _normalise_texcoords(clip, texture_size):
-    tx, ty = texture_size
+def _normalise_texcoords(clip):
     cx, cy, cw, ch = clip
     nx = cx * cw
     ny = cy * ch
-    return (nx / tx,
-            1.0 - (ny + ch) / ty,
-            (nx + cw) / tx,
-            1.0 - ny / ty)
+    return (nx / 1.,
+            1.0 - (ny + ch) / 1.,
+            (nx + cw) / 1.,
+            1.0 - ny / 1.)
 
-def rect_vertices(x, y, w, h, rotation=0., scale=1., clip=(0, 0, 1, 1), texture_size=(1, 1), color=(1, 1, 1, 1)):
+def rect_vertices(x, y, w, h, rotation=0., scale=1., clip=(0, 0, 1, 1), color=(1, 1, 1, 1)):
     hw = w / 2
     hh = h / 2
     x1 = (x - hw) * scale
@@ -54,7 +53,7 @@ def rect_vertices(x, y, w, h, rotation=0., scale=1., clip=(0, 0, 1, 1), texture_
     p2 = _rotate_point(x2, y1, c, s)
     p3 = _rotate_point(x1, y2, c, s)
     p4 = _rotate_point(x2, y2, c, s)
-    tc = _normalise_texcoords(clip, texture_size)
+    tc = _normalise_texcoords(clip)
     return [*p1, tc[0], tc[1], *color,
             *p2, tc[2], tc[1], *color,
             *p3, tc[0], tc[3], *color,
@@ -127,7 +126,7 @@ def polygon_vertices(x, y, points, rotation=0., scale=1., color=(1, 1, 1, 1)):
                          *f[(i + 1) % len(f)], 0, 0, *color])
     return vertices
 
-class Batch:
+class _Batch:
     def __init__(self, program, mvp, texture=None):
         self._ctx = moderngl.get_context()
         self._program = program
@@ -150,11 +149,13 @@ class Batch:
         vao = self._ctx.vertex_array(self._program, [(vbo, '2f 2f 4f', 'position', 'texcoords', 'in_color')])
         if self._texture is not None:
             self._ctx.enable(self._ctx.DEPTH_TEST)
+            self._ctx.enable(self._ctx.BLEND)
             self._ctx.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA)
             vao.program['use_texture'] = 1 
             self._texture.use()
         else:
             self._ctx.disable(self._ctx.DEPTH_TEST)
+            self._ctx.disable(self._ctx.BLEND)
             vao.program['use_texture'] = 0
         vao.program['mvp'].write(self._mvp)
         vao.render()
@@ -184,8 +185,9 @@ class Renderer:
         return self._size
     
     @size.setter
-    def size(self, value):
-        self._size = value
+    def size(self, value: tuple | list):
+        assert len(value) == 2, "Size must be a tuple or list of 2 integers"
+        self._size = tuple(value)
         if platform.system() == "Darwin":
             self._size = (self._size[0] * 2, self._size[1] * 2)
         self._dirty = True
@@ -195,8 +197,9 @@ class Renderer:
         return self._clear_color
     
     @clear_color.setter
-    def clear_color(self, value):
-        self._clear_color = tuple(min(max(float(v) / 255. if isinstance(v, int) else v, 0.), 1.) for v in [*value])
+    def clear_color(self, color: tuple | list):
+        assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 floats"
+        self._clear_color = tuple(min(max(v if isinstance(v, float) else float(v) / 255., 0.), 1.) for v in (color if len(color) == 4 else (*color, 1.)))
     
     @property
     def view(self):
@@ -206,7 +209,7 @@ class Renderer:
         if self._current_batch is None or self._current_batch._texture != texture:
             if self._current_batch is not None:
                 self._batches.append(self._current_batch)
-            self._current_batch = Batch(self._program, self._view, texture)
+            self._current_batch = _Batch(self._program, self._view, texture)
         self._current_batch.add(vertices)
 
     def flush(self):
@@ -219,3 +222,51 @@ class Renderer:
             batch.flush()
         self._batches = []
         self._current_batch = None
+
+__renderer__ = None
+
+def _check_renderer(func):
+    def wrapper(*args, **kwargs):
+        if __renderer__ is None:
+            raise RuntimeError("Renderer not initialized")
+        return func(*args, **kwargs)
+    return wrapper
+
+def init_renderer(viewport: Optional[tuple[int | float, int | float]] = None,
+                  clear_color: tuple[float, float, float, float] = (0, 0, 0, 1)):
+    global __renderer__
+    assert __renderer__ is None, "Renderer already initialized"
+    __renderer__ = Renderer(viewport, clear_color)
+
+@_check_renderer
+def get_viewport():
+    return __renderer__.size
+
+@_check_renderer
+def get_clear_color():
+    return __renderer__.clear_color
+
+@_check_renderer
+def set_viewport(viewport: tuple[int | float, int | float]):
+    __renderer__.size = viewport
+
+@_check_renderer
+def set_clear_color(clear_color: tuple[float, float, float, float]):
+    __renderer__.clear_color = clear_color
+
+@_check_renderer
+def draw(vertices, texture=None):
+    __renderer__.draw(vertices, texture)
+
+@_check_renderer
+def flush():
+    __renderer__.flush()
+
+__all__ = [
+    'rect_vertices',
+    'line_vertices',
+    'ellipse_vertices',
+    'circle_vertices',
+    'polygon_vertices',
+    'Renderer'
+]

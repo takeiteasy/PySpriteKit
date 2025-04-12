@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .scene import Scene
+from .renderer import init_renderer, flush
 
 import quickwindow
 
@@ -28,6 +29,7 @@ def main(cls):
     if __scene__:
         raise RuntimeError("@main already called")
     with quickwindow.quick_window(**cls.config) as wnd:
+        init_renderer()
         scn = cls()
         __scene__.append(scn)
         scn.enter()
@@ -37,7 +39,7 @@ def main(cls):
                 break
             scn.step(dt)
             scn.draw()
-            scn.renderer.flush()
+            flush()
 
             if __drop_scene:
                 if isinstance(__drop_scene, list):
@@ -63,3 +65,5 @@ def main(cls):
                 else:
                     raise RuntimeError("Invalid Scene")
     return cls
+
+__all__ = ['main']

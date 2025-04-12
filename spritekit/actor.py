@@ -21,13 +21,16 @@ from uuid import uuid4
 
 __all__ = ["ActorType", "ActorParent", "Actor"]
 
-class ActorType:
-    pass
-
 @dataclass
+class ActorType:
+    name: str = field(default_factory=lambda: uuid4().hex)
+    on_added: Optional[Callable[[], Any]] = None
+    on_removed: Optional[Callable[[], Any]] = None
+
 class Parent:
-    children: list[ActorType] = field(default_factory=list)
-    parent = None
+    def __init__(self):
+        self.children = []
+        self.parent = None
     
     def add(self, children: ActorType | list[ActorType]):
         if isinstance(children, ActorType):
@@ -75,14 +78,16 @@ class Parent:
         for child in children:
             yield child
     
+    def sort(self, key: Callable[[ActorType], Any]):
+        self.children.sort(key=key)
+    
     def clear(self):
         self.children = []
 
-@dataclass
 class Actor(ActorType, Parent):
-    name: str = field(default_factory=lambda: uuid4().hex)
-    on_added: Optional[Callable[[], Any]] = None
-    on_removed: Optional[Callable[[], Any]] = None
+    def __init__(self, **kwargs):
+        ActorType.__init__(self, **kwargs)
+        Parent.__init__(self)
 
     def __str__(self):
         return f"(Node(\"{self.name}\", {self.__class__.__name__}))"
@@ -90,13 +95,19 @@ class Actor(ActorType, Parent):
     def remove(self):
         if self.parent is not None and issubclass(self.parent, Parent):
             self.parent.remove(self)
-
-    def step(self, delta: float):
-        for child in reversed(self.all_children()):
+    
+    def step_children(self, delta: float):
+        for child in self.children:
             child.step(delta)
 
-    def draw(self):
-        for child in reversed(self.all_children()):
+    def step(self, delta: float):
+        self.step_children(delta)
+    
+    def draw_children(self):
+        for child in self.children:
             child.draw()
+
+    def draw(self):
+        self.draw_children()
 
 __all__ = ["Actor", "Parent"]
