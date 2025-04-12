@@ -17,6 +17,7 @@
 
 import os
 import pathlib
+
 import moderngl
 from raudio import Wave, Music
 from PIL import Image
