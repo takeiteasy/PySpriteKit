@@ -61,6 +61,71 @@ def rect_vertices(x, y, w, h, rotation=0., scale=1., clip=(0, 0, 1, 1), texture_
             *p4, tc[2], tc[3], *color,
             *p2, tc[2], tc[1], *color]
 
+def line_vertices(x1, y1, x2, y2, color=(1, 1, 1, 1), thickness=1.):
+    v1 = glm.vec2(x1, y1)
+    v2 = glm.vec2(x2, y2)
+    ab = v2 - v1
+    n = glm.normalize(glm.vec2(-ab.y, ab.x)) * (thickness / 2.)
+    p1 = v1 + n
+    p2 = v1 - n
+    p3 = v2 + n
+    p4 = v2 - n
+    return [*p1, 0, 0, *color,
+            *p2, 0, 0, *color,
+            *p3, 0, 0, *color,
+            *p2, 0, 0, *color,
+            *p4, 0, 0, *color,
+            *p3, 0, 0, *color]
+
+def ellipse_vertices(x, y, width, height, rotation=0., scale=1., color=(1, 1, 1, 1), segments=32):
+    centre = [x, y, 0., 0., *color]
+    step = 2 * math.pi / segments
+    rx = width / 2. * scale
+    ry = height / 2. * scale
+    c = math.cos(rotation)
+    s = math.sin(rotation)
+    p = glm.vec2([x, y])
+    vertices = []
+    for i in range(segments):
+        a1 = i * step
+        a2 = (i + 1) * step
+        p1 = p + _rotate_point(rx * math.cos(a1), ry * math.sin(a1), c, s)
+        p2 = p + _rotate_point(rx * math.cos(a2), ry * math.sin(a2), c, s)
+        vertices.extend([*centre,
+                         *p1, 0., 0., *color,
+                         *p2, 0., 0., *color])
+    return vertices
+
+def circle_vertices(x, y, radius, rotation=0., scale=1., color=(1, 1, 1, 1), segments=32):
+    return ellipse_vertices(x, y, radius, radius, rotation, scale, color, segments)
+
+def _polygon_centroid(points):
+    assert len(points) > 0
+    area = 0.
+    centroid = glm.vec2(0., 0.)
+    n = len(points)
+    for i in range(n):
+        x1, y1 = points[i]
+        x2, y2 = points[(i + 1) % n]
+        p = (x1 * y2) - (x2 * y1)
+        area += p
+        centroid += glm.vec2((x1 + x2) * p, (y1 + y2) * p)
+    return points[0] if n == 1 else sum(points) / n if area / 2. == 0. else centroid / (6. * area)
+
+def polygon_vertices(x, y, points, rotation=0., scale=1., color=(1, 1, 1, 1)):
+    c = math.cos(rotation)
+    s = math.sin(rotation)
+    position = glm.vec2([x, y])
+    t = [glm.vec2(*p) - position * scale for p in points]
+    f = [glm.vec2(*_rotate_point(*p, c, s)) + p for p in t]
+    centroid_vertex = [*_polygon_centroid(f), 0, 0, *color]
+    vertices = []
+    for i in range(len(f)):
+        vertices.extend([*centroid_vertex,
+                         *f[i], 0, 0, *color,
+                         *f[(i + 1) % len(f)], 0, 0, *color])
+    return vertices
+
 class Batch:
     def __init__(self, program, mvp, texture=None):
         self._ctx = moderngl.get_context()
