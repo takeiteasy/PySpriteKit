@@ -17,6 +17,7 @@
 
 import math
 import platform
+from typing import Optional
 
 import moderngl
 import quickwindow
@@ -159,15 +160,17 @@ class Batch:
         vao.render()
 
 class Renderer:
-    def __init__(self):
+    def __init__(self,
+                 viewport: Optional[tuple[int | float, int | float]] = None,
+                 clear_color: tuple[float, float, float, float] = (0, 0, 0, 1)):
         self._ctx = moderngl.get_context()
         self._program = self._ctx.program(vertex_shader=VertexStage(default_vertex).compile(),
                                           fragment_shader=FragmentStage(default_fragment).compile())
-        self.size = quickwindow.size()
+        self.size = quickwindow.size() if viewport is None else viewport
         self._view = None
         self._dirty = False
         self._update_view()
-        self._clear_color = glm.vec4(0., 0., 1., 1.)
+        self.clear_color = glm.vec4(*clear_color)
         self._batches = []
         self._current_batch = None
     

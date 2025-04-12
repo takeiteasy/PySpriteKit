@@ -15,4 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from .actors import *
+from .cache import *
 from .easing import *
+from .main import *
+from .renderer import *
+from .scene import *
+from .shader import *
