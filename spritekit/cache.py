@@ -92,12 +92,13 @@ def load_image(name, flip=True):
 @_ensure_cached(type_name="textures",
                 folder_names=__image_folders__,
                 extensions=__image_extensions__)
-def load_texture(name, flip=True, mipmaps=True, cache_image=False):
+def load_texture(name, flip=True, filter=(moderngl.NEAREST, moderngl.NEAREST), mipmaps=True, cache_image=False):
     ctx = moderngl.get_context()
     img = load_image(name, flip=flip) if cache_image else _load_image(name, flip)
     texture = ctx.texture(img.size, 4, img.tobytes())
     if mipmaps:
         texture.build_mipmaps()
+    texture.filter = filter
     return texture
 
 @_ensure_cached(type_name="waves",

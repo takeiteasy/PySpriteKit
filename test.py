@@ -44,25 +44,33 @@ def _rect_vertices(x, y, w, h, rotation=0., scale=1., clip=(0, 0, 1, 1), texture
             *p4, tc[2], tc[3], *color,
             *p2, tc[2], tc[1], *color]
 
-class Mesh:
-    def __init__(self, program, vertices):
+class Batch:
+    def __init__(self, program, mvp, texture=None):
         self._ctx = moderngl.get_context()
-        vbo = self._ctx.buffer(np.array(vertices, dtype=np.float32).tobytes() if isinstance(vertices, list) else vertices.astype('f4').tobytes())
-        self._vao = self._ctx.vertex_array(program, [(vbo, '2f 2f 4f', 'position', 'texcoords', 'in_color')])
-
-    def draw(self, mvp=None, texture=None):
-        if texture is not None:
+        self._program = program
+        self._mvp = mvp
+        self._texture = texture
+        self._vertices = []
+    
+    def add(self, vertices):
+        assert len(vertices) % 8 == 0
+        self._vertices.extend(vertices)
+    
+    def flush(self):
+        if not self._vertices:
+            return
+        vbo = self._ctx.buffer(np.array(self._vertices, dtype=np.float32).tobytes())
+        vao = self._ctx.vertex_array(self._program, [(vbo, '2f 2f 4f', 'position', 'texcoords', 'in_color')])
+        if self._texture is not None:
             self._ctx.enable(self._ctx.DEPTH_TEST)
             self._ctx.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA)
-            self._vao.program['use_texture'] = 1 
-            texture.use()
+            vao.program['use_texture'] = 1 
+            self._texture.use()
         else:
             self._ctx.disable(self._ctx.DEPTH_TEST)
-            self._vao.program['use_texture'] = 0
-        if mvp is None:
-            mvp = glm.mat4()
-        self._vao.program['mvp'].write(mvp)
-        self._vao.render()
+            vao.program['use_texture'] = 0
+        vao.program['mvp'].write(self._mvp)
+        vao.render()
 
 class Renderer:
     def __init__(self):
@@ -74,6 +82,8 @@ class Renderer:
         self._update_view()
         self._dirty = True
         self._clear_color = glm.vec4(0., 0., 1., 1.)
+        self._batches = []
+        self._current_batch = None
     
     def _update_view(self):
         halfw, halfh = self._size[0] / 2, self._size[1] / 2
@@ -102,20 +112,30 @@ class Renderer:
     @property
     def view(self):
         return self._view
+    
+    def draw(self, vertices, texture=None):
+        if self._current_batch is None or self._current_batch._texture != texture:
+            if self._current_batch is not None:
+                self._batches.append(self._current_batch)
+            self._current_batch = Batch(self._program, self._view, texture)
+        self._current_batch.add(vertices)
 
     def flush(self):
+        if self._current_batch is not None:
+            self._batches.append(self._current_batch)
         if self._dirty:
             self._update_view()
         self._ctx.clear(viewport=self._size, color=self._clear_color)
+        for batch in self._batches:
+            batch.flush()
+        self._batches = []
+        self._current_batch = None
 
 with quickwindow.quick_window(quit_key=quickwindow.Keys.ESCAPE) as wnd:
     ctx = moderngl.get_context()
     renderer = Renderer()
     texture = load_texture("horse")
-    texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
-    textured_rect = Mesh(renderer._program, _rect_vertices(0, 0, 64, 48, scale=4., clip=(0, 0, 64, 48), texture_size=texture.size))
-    filled_rect = Mesh(renderer._program, _rect_vertices(0, 0, 100, 100, color=(1, 0, 0, 1)))
     for delta, events in wnd.loop():
         renderer.flush()
-        textured_rect.draw(mvp=renderer.view, texture=texture)
-        filled_rect.draw(mvp=renderer.view)
+        renderer.draw(_rect_vertices(0, 0, 100, 100, color=(1, 0, 0, 1)))
+        renderer.draw(_rect_vertices(0, 0, 64, 48, scale=4., clip=(0, 0, 64, 48), texture_size=texture.size), texture=texture)

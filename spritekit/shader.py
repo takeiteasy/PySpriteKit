@@ -45,7 +45,7 @@ class FsOut(FragmentShaderOutputBlock):
 def default_fragment(vs_out: VsOut, uniforms: FsUniforms) -> FsOut:
     if uniforms.use_texture != 0:
         color = vec4(texture(uniforms.in_buffer, vs_out.out_texcoords))
-        if color.a <= 0:
+        if color.a <= 0: # bug in pyglsl, can't use `==` in if statement
             discard
         return FsOut(out_color=color)
     else:
