@@ -57,7 +57,7 @@ class Line(Drawable):
     def draw(self):
         self._wireframe = False
         self._draw([*self._position, *self.end, self._color, self.thickness])
-        self.draw_children()
+        super().draw()
 
 class Rect(Drawable):
     _generator = rect_vertices
@@ -83,7 +83,7 @@ class Rect(Drawable):
 
     def draw(self):
         self._draw([*self._position, *self._size, self._rotation, self._scale, (0., 0., 1., 1.), self._color])
-        self.draw_children()
+        super().draw()
 
 class Circle(Drawable):
     _generator = circle_vertices
@@ -131,7 +131,7 @@ class Circle(Drawable):
 
     def draw(self):
         self._draw([*self._position, self._diameter, self._rotation, self._scale, self._color, self.segments])
-        self.draw_children()
+        super().draw()
 
 class Ellipse(Drawable):
     _generator = ellipse_vertices
@@ -179,7 +179,7 @@ class Ellipse(Drawable):
 
     def draw(self):
         self._draw([*self._position, self._width, self._height, self._rotation, self._scale, self._color, self.segments])
-        self.draw_children()
+        super().draw()
 
 class Polygon(Drawable):
     _generator = polygon_vertices
@@ -226,6 +226,6 @@ class Polygon(Drawable):
 
     def draw(self):
         self._draw([*self._position, self._points, self._rotation, self._scale, self._color])
-        self.draw_children()
+        super().draw()
 
 __all__ = ['Line', 'Rect', 'Circle', 'Ellipse', 'Polygon']

@@ -179,4 +179,4 @@ class Sprite(Rect):
     def draw(self):
         self.wireframe = False
         self._draw([*self._position, *self._size, self._rotation, self._scale, self._clip])
-        self.draw_children()
+        super().draw()

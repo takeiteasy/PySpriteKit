@@ -84,18 +84,12 @@ class Actor(ActorType, Parent):
         if self.parent is not None and issubclass(self.parent, Parent):
             self.parent.remove(self)
     
-    def step_children(self, delta: float):
+    def step(self, delta: float):
         for child in self.children:
             child.step(delta)
-
-    def step(self, delta: float):
-        self.step_children(delta)
     
-    def draw_children(self):
+    def draw(self):
         for child in self.children:
             child.draw()
-
-    def draw(self):
-        self.draw_children()
 
 __all__ = ["Actor", "Parent"]

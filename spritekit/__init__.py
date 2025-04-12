@@ -15,13 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from .actions import *
 from .actor import *
+from .audio import *
 from .cache import *
 from .drawable import *
 from .easing import *
+from .emitter import *
 from .main import *
 from .renderer import *
 from .scene import *
 from .shader import *
 from .shapes import *
 from .sprite import *
+from .timer import *
