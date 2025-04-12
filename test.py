@@ -6,7 +6,6 @@ from spritekit.shader import *
 import math
 import platform
 import numpy as np
-from PIL import Image
 
 from spritekit.cache import *
 
@@ -54,7 +53,11 @@ class Batch:
     
     def add(self, vertices):
         assert len(vertices) % 8 == 0
-        self._vertices.extend(vertices)
+        if self._texture is None:
+            self._vertices.extend(vertices)
+        else:
+            vertices.extend(self._vertices)
+            self._vertices = vertices
     
     def flush(self):
         if not self._vertices:
@@ -134,8 +137,11 @@ class Renderer:
 with quickwindow.quick_window(quit_key=quickwindow.Keys.ESCAPE) as wnd:
     ctx = moderngl.get_context()
     renderer = Renderer()
-    texture = load_texture("horse")
+    horse_texture = load_texture("horse")
+    pear_texture = load_texture("pear")
     for delta, events in wnd.loop():
         renderer.flush()
         renderer.draw(_rect_vertices(0, 0, 100, 100, color=(1, 0, 0, 1)))
-        renderer.draw(_rect_vertices(0, 0, 64, 48, scale=4., clip=(0, 0, 64, 48), texture_size=texture.size), texture=texture)
+        renderer.draw(_rect_vertices(0, 0, 64, 48, scale=4., clip=(0, 0, 64, 48), texture_size=horse_texture.size), texture=horse_texture)
+        renderer.draw(_rect_vertices(-10, 0, 40, 40, scale=2.), texture=pear_texture)
+        renderer.draw(_rect_vertices(0, 0, 50, 50, color=(0, 1, 0, 1)))
