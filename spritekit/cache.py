@@ -32,10 +32,11 @@ def _find_file(file_path, folder_names, extensions):
     if os.path.isfile(file_path):
         return file_path
     _, ext = os.path.splitext(file_path)
-    if ext not in extensions:
-        raise RuntimeError(f"File '{file_path}' has invalid extension {ext}, supported extensions: {', '.join(extensions)}")
-    else:
-        extensions = ext
+    if ext != '':
+        if ext not in extensions:
+            raise RuntimeError(f"File '{file_path}' has invalid extension {ext}, supported extensions: {', '.join(extensions)}")
+        else:
+            extensions = ext
     folders = [d for dir in folder_names for d in ['.', f"{__data_path__}/{dir}", dir]]
     paths = []
     for folder in folders:

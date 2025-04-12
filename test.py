@@ -13,7 +13,17 @@ from spritekit.cache import *
 def _rotate_point(x, y, c, s):
     return glm.vec2(x * c - y * s, x * s + y * c)
 
-def _rect_vertices(x, y, w, h, rotation=0., scale=1., tr=(0, 0, 1, 1), color=(1, 1, 1, 1)):
+def _normalise_texcoords(clip, texture_size):
+    tx, ty = texture_size
+    cx, cy, cw, ch = clip
+    nx = cx * cw
+    ny = cy * ch
+    return (nx / tx,
+            1.0 - (ny + ch) / ty,
+            (nx + cw) / tx,
+            1.0 - ny / ty)
+
+def _rect_vertices(x, y, w, h, rotation=0., scale=1., clip=(0, 0, 1, 1), texture_size=(1, 1), color=(1, 1, 1, 1)):
     hw = w / 2
     hh = h / 2
     x1 = (x - hw) * scale
@@ -26,27 +36,28 @@ def _rect_vertices(x, y, w, h, rotation=0., scale=1., tr=(0, 0, 1, 1), color=(1,
     p2 = _rotate_point(x2, y1, c, s)
     p3 = _rotate_point(x1, y2, c, s)
     p4 = _rotate_point(x2, y2, c, s)
-    return [*p1, tr[0], tr[1], *color,
-            *p2, tr[2], tr[1], *color,
-            *p3, tr[0], tr[3], *color,
-            *p3, tr[0], tr[3], *color,
-            *p4, tr[2], tr[3], *color,
-            *p2, tr[2], tr[1], *color]
-
-def _vbo(ctx, vertices):
-    return ctx.buffer(np.array(vertices, dtype=np.float32).tobytes() if isinstance(vertices, list) else vertices.astype('f4').tobytes())
+    tc = _normalise_texcoords(clip, texture_size)
+    return [*p1, tc[0], tc[1], *color,
+            *p2, tc[2], tc[1], *color,
+            *p3, tc[0], tc[3], *color,
+            *p3, tc[0], tc[3], *color,
+            *p4, tc[2], tc[3], *color,
+            *p2, tc[2], tc[1], *color]
 
 class Mesh:
     def __init__(self, program, vertices):
         self._ctx = moderngl.get_context()
-        vbo = _vbo(self._ctx, vertices) 
+        vbo = self._ctx.buffer(np.array(vertices, dtype=np.float32).tobytes() if isinstance(vertices, list) else vertices.astype('f4').tobytes())
         self._vao = self._ctx.vertex_array(program, [(vbo, '2f 2f 4f', 'position', 'texcoords', 'in_color')])
 
     def draw(self, mvp=None, texture=None):
         if texture is not None:
+            self._ctx.enable(self._ctx.DEPTH_TEST)
+            self._ctx.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA)
             self._vao.program['use_texture'] = 1 
             texture.use()
         else:
+            self._ctx.disable(self._ctx.DEPTH_TEST)
             self._vao.program['use_texture'] = 0
         if mvp is None:
             mvp = glm.mat4()
@@ -62,7 +73,7 @@ class Renderer:
         self._view = None
         self._update_view()
         self._dirty = True
-        self._clear_color = glm.vec4(1., 0., 0., 1.)
+        self._clear_color = glm.vec4(0., 0., 1., 1.)
     
     def _update_view(self):
         halfw, halfh = self._size[0] / 2, self._size[1] / 2
@@ -92,23 +103,19 @@ class Renderer:
     def view(self):
         return self._view
 
-    def load_texture(self, image, flip=True):
-        if isinstance(image, str):
-            image = Image.open(image)
-        if flip:
-            image = image.transpose(Image.FLIP_TOP_BOTTOM)
-        return self._ctx.texture(image.size, 4, image.convert('RGBA').tobytes())
-
     def flush(self):
         if self._dirty:
             self._update_view()
         self._ctx.clear(viewport=self._size, color=self._clear_color)
 
 with quickwindow.quick_window(quit_key=quickwindow.Keys.ESCAPE) as wnd:
+    ctx = moderngl.get_context()
     renderer = Renderer()
-    texture = load_texture("pear.jpg")
-    rect = _rect_vertices(0, 0, 100, 100)
-    mesh = Mesh(renderer._program, rect)
+    texture = load_texture("horse")
+    texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+    textured_rect = Mesh(renderer._program, _rect_vertices(0, 0, 64, 48, scale=4., clip=(0, 0, 64, 48), texture_size=texture.size))
+    filled_rect = Mesh(renderer._program, _rect_vertices(0, 0, 100, 100, color=(1, 0, 0, 1)))
     for delta, events in wnd.loop():
         renderer.flush()
-        mesh.draw(mvp=renderer.view, texture=texture)
+        textured_rect.draw(mvp=renderer.view, texture=texture)
+        filled_rect.draw(mvp=renderer.view)

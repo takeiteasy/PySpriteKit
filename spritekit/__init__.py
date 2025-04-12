@@ -16,5 +16,3 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .easing import *
-from .scene import *
-from .actor import *
