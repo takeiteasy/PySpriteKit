@@ -66,18 +66,6 @@ class Parent:
     def find(self, name: str):
         return [child for child in self.children if child.name == name]
     
-    def each(self,
-             name: Optional[str] = None,
-             sort: Optional[Callable[[ActorType], Any]] = None,
-             reverse: bool = False):
-        children = self.find(name) if name else self.children
-        if sort is not None:
-            children.sort(key=sort)
-        if reverse:
-            children.reverse()
-        for child in children:
-            yield child
-    
     def sort(self, key: Callable[[ActorType], Any]):
         self.children.sort(key=key)
     

@@ -56,9 +56,9 @@ class Scene(Parent):
         pass
 
     def step(self, delta):
-        for child in self.each():
+        for child in self.children:
             child.step(delta)
 
     def draw(self):
-        for child in self.each(reverse=True):
+        for child in reversed(self.children):
             child.draw()
