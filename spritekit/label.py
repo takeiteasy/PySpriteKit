@@ -18,6 +18,8 @@
 from .drawable import Drawable
 from .cache import load_font
 
+import moderngl
+from PIL import Image
 import freetype as ft
 
 class _Glyph:
@@ -30,13 +32,15 @@ class _Glyph:
         self._height  = bitmap.rows
 
 class Label(Drawable):
-    def __init__(self, text: str, font: str | ft.Face, size: int = 48, **kwargs):
+    def __init__(self, text: str, font: str | ft.Face, font_size: int = 48, **kwargs):
         super().__init__(**kwargs)
         self._text = text
         self._font = font if isinstance(font, ft.Face) else load_font(font)
-        self._font.set_char_size(size * 64)
-        self._size = size
-        self._cache = {}
+        self._font.set_char_size(font_size * 64)
+        self._font_size = font_size
+        self._texture = None
+        self._generator = self._regenerate
+        self._outline_generator = self._regenerate
     
     @property
     def text(self):
@@ -48,38 +52,31 @@ class Label(Drawable):
         self._dirty = True
     
     @property
-    def size(self):
-        return self._size
+    def font_size(self):
+        return self._font_size
     
-    @size.setter
-    def size(self, size: int):
-        self._size = size
-        self._font.set_char_size(size * 64)
+    @font_size.setter
+    def font_size(self, font_size: int):
+        self._font_size = font_size
+        self._font.set_char_size(font_size * 64)
         self._dirty = True
 
-    def _ensure_char(self, char):
-        if not char in self._cache:
-            glyph = _Glyph(char, self._font)
-            self._cache[char] = glyph
-            return glyph
-        else:
-            return self._cache[char]
-    
-    def measure(self):
-        width = 0
-        height = 0
-        line_height = 0
-        for char in self._text:
-            glyph = self._ensure_char(char)
-            line_height = max(line_height, glyph.height)
-            if char == '\n':
-                height += line_height
-                width = 0
-            else:
-                width += glyph.width
-        return width, height if height > 0 else line_height
-    
     def _regenerate(self):
-        self.clear()
-        for char in self._text:
-            glyph = self._ensure_char(char)
+        glyphs = { c: _Glyph(c, self._font) for c in list(set(list(self._text))) }
+        max_width = max(glyph.width for glyph in glyphs.values())
+        max_height = max(glyph.height for glyph in glyphs.values())
+        lines = self._text.split("\n")
+        longest_line = max(lines, key=len)
+        image = Image.new("RGBA", (max_width * longest_line, max_height * len(lines)), (0, 0, 0, 0))
+        keys = { k: v for k, v in enumerate(sorted([int(c) for c in glyphs.keys()])) }
+        for k, v in keys.items():
+            glyph = glyphs[v]
+            image.paste(glyph.bitmap, (k * max_width, 0))
+        ctx = moderngl.get_context()
+        self._texture = ctx.texture(image.size, 4, image.tobytes())
+        # TODO: Check texture atlas and stuff
+        # TODO: Generate vertices for each glyph
+    
+    def draw(self):
+        self._draw([])
+        super().draw()

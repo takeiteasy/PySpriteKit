@@ -25,6 +25,7 @@ import glm
 
 class Line(Drawable):
     _generator = line_vertices
+    _outline_generator = line_vertices
 
     def __init__(self,
                  position: glm.vec2 | list[float] | tuple[float, float],
@@ -55,7 +56,6 @@ class Line(Drawable):
         self._dirty = True
 
     def draw(self):
-        self._wireframe = False
         self._draw([*self._position, *self.end, self._color, self.thickness])
         super().draw()
 
