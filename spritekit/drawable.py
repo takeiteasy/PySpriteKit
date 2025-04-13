@@ -50,11 +50,13 @@ class Drawable(Actor):
         if self.__class__._generator is not None:
             self._generator = staticmethod(self.__class__._generator)
         else:
-            self._generator = None
+            if not hasattr(self, '_generator'):
+                self._generator = None
         if self.__class__._outline_generator is not None:
             self._outline_generator = staticmethod(self.__class__._outline_generator)
         else:
-            self._outline_generator = None
+            if not hasattr(self, '_outline_generator'):
+                self._outline_generator = None
         assert len(position) == 2, "Position must be a 2D vector"
         self._position = glm.vec2(*position)
         self._rotation = math.radians(rotation) if degrees else rotation

@@ -38,9 +38,6 @@ class Label(Drawable):
         self._font = font if isinstance(font, ft.Face) else load_font(font)
         self._font.set_char_size(font_size * 64)
         self._font_size = font_size
-        self._texture = None
-        self._generator = self._regenerate
-        self._outline_generator = self._regenerate
     
     @property
     def text(self):
