@@ -21,6 +21,7 @@ import pathlib
 import moderngl
 from raudio import Wave, Music
 from PIL import Image
+import freetype as ft
 
 __cache__ = {}
 __SKPATH__ = pathlib.Path(__file__).parent
@@ -75,8 +76,10 @@ def _ensure_cached(type_name, folder_names, extensions):
 
 __image_extensions__ = ['.blp', '.bmp', '.dib', '.bufr', '.cur', '.pcx', '.dcx', '.dds', '.ps', '.eps', '.fit', '.fits', '.fli', '.flc', '.ftc', '.ftu', '.gbr', '.gif', '.grib', '.h5', '.hdf', '.png', '.apng', '.jp2', '.j2k', '.jpc', '.jpf', '.jpx', '.j2c', '.icns', '.ico', '.im', '.iim', '.jfif', '.jpe', '.jpg', '.jpeg', '.mpg', '.mpeg', '.tif', '.tiff', '.mpo', '.msp', '.palm', '.pcd', '.pdf', '.pxr', '.pbm', '.pgm', '.ppm', '.pnm', '.pfm', '.psd', '.qoi', '.bw', '.rgb', '.rgba', '.sgi', '.ras', '.tga', '.icb', '.vda', '.vst', '.webp', '.wmf', '.emf', '.xbm', '.xpm']
 __audio_extensions__ = ['.wav', '.mp3', '.ogg', '.flac', '.xm', '.mod', '.qoa']
+__font_extensions__ = [".ttf", ".ttc", ".otf", ".pfa", ".pfb", ".cff", ".fnt", ".fon", ".bdf", ".pcf", ".woff", ".woff2", ".dfont"]
 __image_folders__ = ("textures", "images", "sprites")
 __audio_folders__ = ("audio", "music", "sfx")
+__font_folders__ = ("fonts",)
 
 def _load_image(name, flip=True):
     img = Image.open(name).convert('RGBA')
@@ -113,6 +116,12 @@ def load_wave(name):
                 extensions=__audio_extensions__)
 def load_music(name):
     return Music(name)
+
+@_ensure_cached(type_name="fonts",
+                folder_names=__font_folders__,
+                extensions=__font_extensions__)
+def load_font(name):
+    return ft.Face(name)
 
 def set_data_path(path):
     global __data_path__

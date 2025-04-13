@@ -15,9 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .actor import Actor
 from dataclasses import dataclass
 from typing import Optional, Callable
+
+from .actor import Actor
 
 @dataclass
 class Timer(Actor):

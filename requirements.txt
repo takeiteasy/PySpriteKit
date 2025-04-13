@@ -6,3 +6,4 @@ moderngl==5.12.0
 numpy==2.2.4
 pillow==11.1.0
 pyglsl==0.0.8
+freetype-py==2.5.1

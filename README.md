@@ -3,107 +3,24 @@
 > [!WARNING]
 > Work in progress, see [TODO](#todo)
 
-2D scene+actor framework built on top of [raylib](https://github.com/raysan5/raylib), based off [SpriteKit](https://developer.apple.com/documentation/spritekit) by Apple.
-
-> [!NOTE]
-> `pip install spritekit==0.1.2`
-
-### Features
-
-- Raylib bindings (using [raylib-python-cffi](https://github.com/electronstudio/raylib-python-cffi/tree/master))
-- 2D rendering (shapes, sprites, text)
-- Audio (music, sound effects)
-- Scene management
-- Actor framework
-- Linear algebra (vector2,3,4, matrix4, taken from [Pyrr](https://github.com/adamlwgriffiths/Pyrr))
-- Easing functions (taken from [raylib-py](https://github.com/overdev/raylib-py/blob/master/src/raylibpy/easings.py))
-- Finite state machine (build on top of [transitions](https://github.com/pytransitions/transitions))
-- Action framework
-
-### Example
-
-```python3
-import spritekit as sk
-from typing import override
-
-@sk.main_scene
-class TestScene(sk.Scene):
-    config = {
-        "width": 800,
-        "height": 600,
-        "title": "Test",
-        "exit_key": sk.Keys.escape,
-        "flags": sk.Flags.window_resizable,
-        "fps": 60
-    }
-
-    def add_stuff(self):
-        self.add_child(sk.RectangleNode(name="test",
-                                        width=100,
-                                        height=100,
-                                        color=sk.Color(1., 0, 0)))
-        self.add_child(sk.CircleNode(name="test",
-                                     position=sk.Vector2([100, 100]),
-                                     radius=100,
-                                     color=sk.Color(0, 1., 0)))
-        self.add_child(sk.TriangleNode(name="test",
-                                       position2=sk.Vector2([100, 200]),
-                                       position3=sk.Vector2([200, 100]),
-                                       color=sk.Color(0, 0, 1.)))
-        self.add_child(sk.SpriteNode(name="test",
-                                     texture=sk.Texture(f"assets/textures/LA.png"),
-                                     origin=sk.Vector2([1., 1.]),
-                                     scale=sk.Vector2([0.5, 0.5])))
-
-    @override
-    def enter(self):
-        self.add_child(sk.LabelNode(name="tset",
-                                    text="Hello, World!",
-                                    font_size=24,
-                                    color=sk.Color(1., 0., 1.)))
-        self.add_child(sk.MusicNode(name="bg",
-                                    music=sk.Music(f"assets/audio/country.mp3"),
-                                    autostart=True))
-        self.add_stuff()
-
-    @override
-    def step(self, delta):
-        if sk.Keyboard.key_pressed("r"):
-            if self.find_children("test"):
-                self.remove_children("test")
-            else:
-                self.add_stuff()
-        if sk.Keyboard.key_pressed("space"):
-            for child in self.find_children("bg"):
-                child.toggle()
-
-        for child in self.children("test"):
-            child.position.x += 100 * delta
-        for child in self.children("tset"):
-            child.rotation += 100 * delta
-        super().step(delta) # update scene internal step
-```
-
-## Requirements
-
-```
-numpy==2.2.2
-raylib==5.5.0.2
-transitions==0.9.2
-slimrr==0.1.0
-```
+2D scene+actor framework
 
 ## TODO
 
 - [X] ~~Action Nodes~~
 - [X] ~~Timer Node~~
-- [ ] RenderTexture wrapper
 - [X] ~~Emitter Node~~
+- [X] ~~Sprites + Spritesheets~~
+- [X] ~~Audio nodes~~
+- [ ] **Fonts + Label node**
 - [ ] TileMap Node
+- [ ] Finate state machine
+- [ ] Scene Director class
+- [ ] Framebuffer + Shader classes
 - [ ] 3D Nodes (displayed in 2D)
 - [ ] 2D Physics
+- [ ] Bezier curves
 - [ ] Video Node
-- [ ] Transform Node
 - [ ] Add examples
 - [ ] Add documentation
 

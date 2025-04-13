@@ -15,13 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .timer import Timer
-from .actor import Actor
-from .easing import ease_linear_in_out
 from dataclasses import dataclass
 from typing import Optional, Callable, Any, override
 from contextlib import contextmanager
 from queue import Queue
+
+from .timer import Timer
+from .actor import Actor
+from .easing import ease_linear_in_out
 
 class ActionType:
     pass
