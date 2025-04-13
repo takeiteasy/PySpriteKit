@@ -18,7 +18,9 @@
 import math
 from typing import Optional
 
-from .renderer import line_vertices, rect_vertices, ellipse_vertices, circle_vertices, polygon_vertices
+from .renderer import (line_vertices, rect_vertices, ellipse_vertices, circle_vertices,
+                       polygon_vertices, rect_outline_vertices, ellipse_outline_vertices,
+                       circle_outline_vertices, polygon_outline_vertices)
 from .drawable import Drawable
 
 import glm
@@ -61,7 +63,7 @@ class Line(Drawable):
 
 class Rect(Drawable):
     _generator = rect_vertices
-    _outline_generator = None 
+    _outline_generator = rect_outline_vertices
 
     def __init__(self,
                  position: glm.vec2 | list | tuple,
@@ -87,7 +89,7 @@ class Rect(Drawable):
 
 class Circle(Drawable):
     _generator = circle_vertices
-    _outline_generator = None
+    _outline_generator = circle_outline_vertices
     
     def __init__(self,
                  position: glm.vec2 | list | tuple,
@@ -135,7 +137,7 @@ class Circle(Drawable):
 
 class Ellipse(Drawable):
     _generator = ellipse_vertices
-    _outline_generator = None
+    _outline_generator = ellipse_outline_vertices
 
     def __init__(self,
                  position: glm.vec2 | list | tuple,
@@ -183,12 +185,8 @@ class Ellipse(Drawable):
 
 class Polygon(Drawable):
     _generator = polygon_vertices
-    _outline_generator = None
-
-    def _set_points(self, points: list | tuple):
-        self._points = [self._position + glm.vec2(*p) for p in points if len(p) == 2]
-        self._dirty = True
-    
+    _outline_generator = polygon_outline_vertices
+ 
     def __init__(self,
                  position: glm.vec2 | list | tuple,
                  points: list | tuple,
@@ -200,6 +198,10 @@ class Polygon(Drawable):
         assert len(self._points) == len(points), "All points must be 2D vectors"
         if sort:
             self.sort()
+    
+    def _set_points(self, points: list | tuple):
+        self._points = [glm.vec2(*p) for p in points if len(p) == 2]
+        self._dirty = True
     
     def sort(self):
         self._points = sorted(self._points, key=lambda p: math.atan2(p.y, p.x))

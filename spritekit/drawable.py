@@ -117,5 +117,5 @@ class Drawable(Actor):
             else:
                 self._vertices = self._generator(*args)
             self._dirty = False
-        draw_call(self._vertices, self._texture)
+        draw_call(self._vertices, None if self._wireframe else self._texture)
 

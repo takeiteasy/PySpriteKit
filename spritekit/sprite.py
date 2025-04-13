@@ -177,6 +177,5 @@ class Sprite(Rect):
                 self.clip = self.current_animation[self._current_frame]
 
     def draw(self):
-        self.wireframe = False
-        self._draw([*self._position, *self._size, self._rotation, self._scale, self._clip])
+        self._draw([*self._position, *self._size, self._rotation, self._scale, self._clip, self._color])
         super().draw()

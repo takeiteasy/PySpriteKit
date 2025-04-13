@@ -33,6 +33,7 @@ class _Glyph:
 
 class Label(Drawable):
     def __init__(self, text: str, font: str | ft.Face, font_size: int = 48, **kwargs):
+        self._generator = self._regenerate
         super().__init__(**kwargs)
         self._text = text
         self._font = font if isinstance(font, ft.Face) else load_font(font)

@@ -55,6 +55,9 @@ class Scene(Parent):
     def exit(self):
         pass
 
+    def event(self, event):
+        pass
+
     def step(self, delta):
         for child in self.children:
             child.step(delta)

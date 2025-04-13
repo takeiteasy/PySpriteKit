@@ -37,6 +37,8 @@ def main(cls):
         for dt, events in wnd.loop():
             if not __scene__:
                 break
+            for event in events:
+                scn.event(event)
             scn.step(dt)
             scn.draw()
             flush()
