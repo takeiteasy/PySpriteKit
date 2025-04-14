@@ -186,21 +186,24 @@ class _Batch:
             vertices.extend(self._vertices)
             self._vertices = vertices
     
+    @property
+    def has_texture(self):
+        return self._texture is not None
+    
     def flush(self):
         if not self._vertices:
             return
         vbo = self._ctx.buffer(np.array(self._vertices, dtype=np.float32).tobytes())
         vao = self._ctx.vertex_array(self._program, [(vbo, '2f 2f 4f', 'position', 'texcoords', 'in_color')])
+        self._ctx.enable(self._ctx.BLEND)
         if self._texture is not None:
-            self._ctx.enable(self._ctx.DEPTH_TEST)
-            self._ctx.enable(self._ctx.BLEND)
-            self._ctx.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA)
+            self._ctx.blend_func = (moderngl.ONE, moderngl.ONE_MINUS_SRC_ALPHA)
             vao.program['use_texture'] = 1 
             self._texture.use()
         else:
-            self._ctx.disable(self._ctx.DEPTH_TEST)
-            self._ctx.disable(self._ctx.BLEND)
+            self._ctx.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA)
             vao.program['use_texture'] = 0
+        self._ctx.disable(self._ctx.DEPTH_TEST)
         vao.program['mvp'].write(self._mvp)
         vao.render()
 

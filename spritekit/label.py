@@ -15,136 +15,122 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from functools import reduce
+import os
 
+from .actor import Actor
+from .cache import _find_file
 from .drawable import Drawable
-from .cache import load_font
 from .renderer import rect_vertices
 
 import moderngl
-import glm
-from PIL import Image
-import freetype as ft
+from PIL import ImageFont, ImageDraw, Image
+from typing import Optional
 
-def _is_monospaced_metrics(face: ft.Face):
-    return bool(face.face_flags & ft.FT_FACE_FLAG_FIXED_WIDTH)
+__pil_fonts__ = [".pil", ".pbm"]
+__other_fonts__ = [".ttf", ".ttc", ".otf", ".pfa", ".pfb", ".cff", ".fnt", ".fon", ".bdf", ".pcf", ".woff", ".woff2", ".dfont"]
+__font_extensions__ = __pil_fonts__ + __other_fonts__
+__font_folders__ = ("fonts",)
 
-def _get_char_width(face: ft.Face, char: str):
-    face.load_char(char, ft.FT_LOAD_RENDER)
-    return face.glyph.advance.x
+def _convert_color(color: tuple | list):
+    assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 values"
+    return tuple(min(max(v if isinstance(v, int) else int(v * 255.), 0), 255) for v in (color if len(color) == 4 else (*color, 255)))
 
-def _is_monospaced_font(face: ft.Face, test_chars):
-    if not _is_monospaced_metrics(face):
-        return None
-    if not test_chars:
-        test_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-    widths = set(_get_char_width(face, char) for char in test_chars)
-    return widths[0] if len(widths) == 1 else None
-
-class _Glyph:
-    def __init__(self, bitmap: ft.Bitmap, glyph: ft.Glyph, clip: tuple[float, float, float, float]):
-        self.bitmap = bitmap
-        self.glyph = glyph
-        self.clip = clip
+# TODO: Rewrite to replace ImageFont
+# TODO: Text-alignment
 
 class Label(Drawable):
-    def __init__(self, text: str, font: str | ft.Face, font_size: int = 48, **kwargs):
-        self._generator = self._regenerate
+    def __init__(self,
+                 text: str,
+                 font: str | ImageFont.FreeTypeFont | ImageFont.ImageFont,
+                 font_size: int = 48,
+                 background: Optional[tuple | list] = None,
+                 **kwargs):
+        color = kwargs.pop("color", (255, 255, 255, 255))
+        self._generator = self._rebuild
         super().__init__(**kwargs)
-        self._font = font if isinstance(font, ft.Face) else load_font(font)
-        self._width = None
-        assert self._test_monospaced(), "Font must be monospaced"
-        self._font_size = None
-        self._cache = {}
-        self._sorted_keys = []
-        self._text = None
+        self._color = _convert_color(color)
+        self._font_size = font_size
+        self._text = text
+        self.font = font
+        self._background_color = _convert_color(background) if background is not None else (0, 0, 0, 0)
         self._texture = None
         self._dirty = True
-        self._dirty_texture = True
-        self.font_size = font_size
-        self.text = text
-    
-    def _test_monospaced(self):
-        self._width = _is_monospaced_font(self._font)
-        return self._width is not None
     
     @property
     def text(self):
         return self._text
     
     @text.setter
-    def text(self, text: str):
-        uniq = list(set(list(text)))
-        keys = list(self._cache.keys())
-        new = [c for c in uniq if c not in keys]
-        if new:
-            for char in new:
-                self._font.load_char(char)
-                self._cache[char] = _Glyph(self._font.glyph.bitmap, self._font.glyph, (0., 0., 1., 1.))
-            self._sorted_keys = sorted(self._cache.keys())
-            self._dirty_texture = True
-        if self._text != text:
-            self._text = text
-            self._dirty = True
-        assert len(self._text) > 0, "Label must have text"
+    def text(self, value: str):
+        self._text = value
+        self._dirty = True
+    
+    @property
+    def font(self):
+        return self._font
+    
+    @font.setter
+    def font(self, value: str | ImageFont.FreeTypeFont | ImageFont.ImageFont):
+        match value:
+            case str():
+                found = _find_file(value, __font_folders__, __font_extensions__)
+                _, ext = os.path.splitext(found)
+                if ext in __pil_fonts__:
+                    self._font = ImageFont.load(found)
+                elif ext in __other_fonts__:
+                    self._font = ImageFont.truetype(found, self._font_size)
+                else:
+                    raise ValueError(f"Unsupported font extension: {ext}, supported extensions: {', '.join(__font_extensions__)}")
+            case ImageFont.FreeTypeFont() | ImageFont.ImageFont():
+                self._font = value
+            case _:
+                raise ValueError(f"Unsupported font type")
+        self._is_truetype = isinstance(self._font, ImageFont.FreeTypeFont)
+        self._dirty = True
     
     @property
     def font_size(self):
         return self._font_size
     
     @font_size.setter
-    def font_size(self, font_size: int):
-        self._font_size = font_size
-        self._font.set_char_size(font_size * 64)
-        self._cache = {}
-        self._texture = None
-        self.text = self._text
+    def font_size(self, value: int):
+        self._font_size = value
         self._dirty = True
-        self._dirty_texture = True
-    
-    def _convert_clip(self, x, y, tx, ty, cx, cy):
-        x *= cx
-        y *= cy
-        return (x / tx,
-                1.0 - (y + cy) / ty,
-                (x + cx) / tx,
-                1.0 - y / ty)
 
-    def _regenerate_texture(self):
-        width = self._width * len(self._sorted_keys)
-        height = max(self._cache[x].glyph.rows for x in self._sorted_keys)
-        image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-        for x, char in enumerate(self._sorted_keys):
-            image.paste(self._cache[char].bitmap, (x * self._width, 0))
-            self._cache[char].clip = self._convert_clip(x * self._width, 0,
-                                                        width, height,
-                                                        self._width, height)
-        self._texture = moderngl.get_context().texture(image.size, 4, image.tobytes())
-        self._dirty_texture = False
+    @property
+    def color(self):
+        return self._color
     
-    def _regenerate_vertices(self):
-        self._vertices = []
-        lines = self._text.split("\n")
-        max_height = reduce(lambda x, y: x + y, [max(self._cache[x].height for x in line) for line in lines])
-        y = self._position.y - max_height / 2
-        for line in lines:
-            # TODO: Text alignment
-            x = self._position.x - (len(line) * self._width / 2)
-            height = 0
-            for char in line:
-                self._vertices.extend(rect_vertices(x, y, self._cache[char].width, self._cache[char].height, 0., 1., self._cache[char].clip, self._color))
-                x += self._cache[char].width
-                height = max(height, self._cache[char].height)
-            y += height
-        
-    def _regenerate(self):
-        if self._dirty_texture or self._texture is None:
-            self._regenerate_texture()
-        self._regenerate_vertices()
-        self._dirty = False
+    @color.setter
+    def color(self, value: tuple | list):
+        self._color = _convert_color(value)
+        self._dirty = True
+    
+    @property
+    def background_color(self):
+        return self._background_color
+    
+    @background_color.setter
+    def background_color(self, value: tuple | list):
+        self._background_color = _convert_color(value)
+        self._dirty = True
+    
+    def _rebuild(self):
+        if self._is_truetype:
+            bbox = self._font.getbbox(self._text)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+        else:
+            text_width, text_height = self._font.getsize(self._text)
+        image = Image.new("RGBA", (text_width + 20, text_height + 20), self._background_color)
+        draw = ImageDraw.Draw(image)
+        draw.text((0, 0), self._text, font=self._font, fill=self._color)
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+        if self._texture is not None:
+            del self._texture
+        self._texture = moderngl.get_context().texture(image.size, 4, image.tobytes())
+        return rect_vertices(*self._position, *self._texture.size, self._rotation, self._scale, (0., 0., 1., 1.), self._color)
     
     def draw(self):
         self._draw([])
-        super().draw()
-
-__all__ = ["Label"]
+        Actor.draw(self)

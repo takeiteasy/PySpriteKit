@@ -24,7 +24,7 @@ from .renderer import draw as draw_call
 import glm
 
 def _convert_color(color: tuple | list):
-    assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 floats"
+    assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 values"
     return tuple(min(max(v if isinstance(v, float) else float(v) / 255., 0.), 1.) for v in (color if len(color) == 4 else (*color, 1.)))
 
 class Drawable(Actor):
@@ -32,9 +32,7 @@ class Drawable(Actor):
     _outline_generator: Optional[Callable[[], list[float]]] = None
 
     def __init__(self,
-                 name: Optional[str] = None,
                  position: glm.vec2 | list | tuple = (0., 0.),
-                 z: float | int = 0.,
                  rotation: float = 0.,
                  degrees: bool = False,
                  scale: float = 1.,
@@ -45,8 +43,6 @@ class Drawable(Actor):
         self._vertices = []
         self._texture = None
         super().__init__(**kwargs)
-        if name is not None:
-            self.name = name
         if self.__class__._generator is not None:
             self._generator = staticmethod(self.__class__._generator)
         else:

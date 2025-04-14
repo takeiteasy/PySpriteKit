@@ -12,7 +12,7 @@
 - [X] ~~Emitter Node~~
 - [X] ~~Sprites + Spritesheets~~
 - [X] ~~Audio nodes~~
-- [ ] **Fonts + Label node**
+- [X] ~~Fonts + Label node~~
 - [ ] TileMap Node
 - [ ] Finate state machine
 - [ ] Scene Director class

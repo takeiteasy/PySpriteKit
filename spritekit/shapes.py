@@ -18,6 +18,7 @@
 import math
 from typing import Optional
 
+from .actor import Actor
 from .renderer import (line_vertices, rect_vertices, ellipse_vertices, circle_vertices,
                        polygon_vertices, rect_outline_vertices, ellipse_outline_vertices,
                        circle_outline_vertices, polygon_outline_vertices)
@@ -30,11 +31,10 @@ class Line(Drawable):
     _outline_generator = line_vertices
 
     def __init__(self,
-                 position: glm.vec2 | list[float] | tuple[float, float],
-                 end: glm.vec2 | list[float] | tuple[float, float],
+                 end: glm.vec2 | list[float] | tuple[float, float] = (0., 0.),
                  thickness: float = 1.,
                  **kwargs):
-        super().__init__(position=position, **kwargs)
+        super().__init__(**kwargs)
         self._end = end
         self._thickness = thickness
 
@@ -59,17 +59,16 @@ class Line(Drawable):
 
     def draw(self):
         self._draw([*self._position, *self.end, self._color, self.thickness])
-        super().draw()
+        Actor.draw(self)
 
 class Rect(Drawable):
     _generator = rect_vertices
     _outline_generator = rect_outline_vertices
 
     def __init__(self,
-                 position: glm.vec2 | list | tuple,
-                 size: glm.vec2 | list | tuple,
+                 size: glm.vec2 | list | tuple = (1., 1.),
                  **kwargs):
-        super().__init__(position=position, **kwargs)
+        super().__init__(**kwargs)
         assert len(size) == 2, "Size must be a 2D vector"
         self._size = glm.vec2(*size)
     
@@ -85,19 +84,18 @@ class Rect(Drawable):
 
     def draw(self):
         self._draw([*self._position, *self._size, self._rotation, self._scale, (0., 0., 1., 1.), self._color])
-        super().draw()
+        Actor.draw(self)
 
 class Circle(Drawable):
     _generator = circle_vertices
     _outline_generator = circle_outline_vertices
     
     def __init__(self,
-                 position: glm.vec2 | list | tuple,
                  diameter: float = 1.,
                  radius: Optional[float] = None,
                  segments: int = 32,
                  **kwargs):
-        super().__init__(position=position, **kwargs)
+        super().__init__(**kwargs)
         self._diameter = diameter if radius is None else radius * 2.
         assert self._diameter > 0., "Diameter must be greater than 0"
         assert segments >= 3, "Segments must be at least 3"
@@ -133,19 +131,18 @@ class Circle(Drawable):
 
     def draw(self):
         self._draw([*self._position, self._diameter, self._rotation, self._scale, self._color, self.segments])
-        super().draw()
+        Actor.draw(self)
 
 class Ellipse(Drawable):
     _generator = ellipse_vertices
     _outline_generator = ellipse_outline_vertices
 
     def __init__(self,
-                 position: glm.vec2 | list | tuple,
                  width: float = 1.,
                  height: float = 1.,
                  segments: int = 32,
                  **kwargs):
-        super().__init__(position=position, **kwargs)
+        super().__init__(**kwargs)
         self._width = width
         self._height = height
         assert segments >= 3, "Segments must be at least 3"
@@ -181,18 +178,17 @@ class Ellipse(Drawable):
 
     def draw(self):
         self._draw([*self._position, self._width, self._height, self._rotation, self._scale, self._color, self.segments])
-        super().draw()
+        Actor.draw(self)
 
 class Polygon(Drawable):
     _generator = polygon_vertices
     _outline_generator = polygon_outline_vertices
  
     def __init__(self,
-                 position: glm.vec2 | list | tuple,
                  points: list | tuple,
                  sort: bool = False,
                  **kwargs):
-        super().__init__(position=position, **kwargs)
+        super().__init__(**kwargs)
         self._sort = sort
         self._set_points(points)
         assert len(self._points) == len(points), "All points must be 2D vectors"
@@ -228,6 +224,6 @@ class Polygon(Drawable):
 
     def draw(self):
         self._draw([*self._position, self._points, self._rotation, self._scale, self._color])
-        super().draw()
+        Actor.draw(self)
 
 __all__ = ['Line', 'Rect', 'Circle', 'Ellipse', 'Polygon']
