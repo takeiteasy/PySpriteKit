@@ -60,6 +60,10 @@ class SceneParent:
             scene.exit()
         return result[0] if n == 1 else result
     
+    def remove_scene(self, scene: SceneType):
+        scene.exit()
+        self._scenes.remove(scene)
+    
     def clear_scenes(self):
         self._scenes = []
     
@@ -83,6 +87,7 @@ class Scene(SceneType, ActorParent, FiniteStateMachine, SceneParent):
     frame_limit = None
 
     def __init__(self, **kwargs):
+        self.parent = None
         self._camera = kwargs.pop("camera", Camera())
         ActorParent.__init__(self)
         SceneParent.__init__(self, kwargs.pop("scenes", []))
@@ -114,6 +119,12 @@ class Scene(SceneType, ActorParent, FiniteStateMachine, SceneParent):
     def camera(self, value: Camera):
         self._camera = value
         self._camera.dirty = True
+    
+    def remove(self):
+        if not self.parent:
+            quit()
+        else:
+            self.parent.remove_scene(self)
     
     def enter(self):
         pass

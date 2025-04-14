@@ -45,9 +45,10 @@ class TestScene(sk.Scene):
 
 ## Features
 
-- [X] Scenes
-- [X] Batched renderer
 - [X] Easy + Flexible
+- [X] Scenes
+- [X] Automatic batched rendering
+- [X] Automatic asset cache
 - [X] Line, Rectangle, Ellipse, Circle, Polygon
 - [X] Sprites
 - [X] Labels
@@ -60,10 +61,12 @@ class TestScene(sk.Scene):
 - [ ] Input handling
 - [ ] Event broadcasting
 - [ ] Framebuffers + Shader classes
+- [ ] Render scenes to Framebuffers
 - [ ] 3D render to texture (displayed in 2D)
 - [ ] 2D Physics
 - [ ] Bezier curves
 - [ ] Video + GIFs
+- [ ] Headless
 - [ ] Add examples
 - [ ] Add documentation
 
