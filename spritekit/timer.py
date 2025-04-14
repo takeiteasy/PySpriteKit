@@ -21,7 +21,7 @@ from typing import Optional, Callable
 from .actor import Actor
 
 @dataclass
-class Timer(Actor):
+class TimerActor(Actor):
     duration: float = 1.
     repeat: Optional[bool | int] = None
     on_complete: Optional[Callable[[], None]] = None
@@ -103,4 +103,4 @@ class Timer(Actor):
         if not self._completed:
             self._running = True
 
-__all__ = ["Timer"]
+__all__ = ["TimerActor"]

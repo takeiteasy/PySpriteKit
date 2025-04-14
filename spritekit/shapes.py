@@ -19,16 +19,14 @@ import math
 from typing import Optional
 
 from .actor import Actor
-from .renderer import (line_vertices, rect_vertices, ellipse_vertices, circle_vertices,
-                       polygon_vertices, rect_outline_vertices, ellipse_outline_vertices,
-                       circle_outline_vertices, polygon_outline_vertices)
-from .drawable import Drawable
+from . import _drawable as drawable
+from . import _renderer as renderer
 
 import glm
 
-class Line(Drawable):
-    _generator = line_vertices
-    _outline_generator = line_vertices
+class LineActor(drawable.Drawable):
+    _generator = renderer.line_vertices
+    _outline_generator = renderer.line_vertices
 
     def __init__(self,
                  end: glm.vec2 | list[float] | tuple[float, float] = (0., 0.),
@@ -61,9 +59,9 @@ class Line(Drawable):
         self._draw([*self._position, *self.end, self._color, self.thickness])
         Actor.draw(self)
 
-class Rect(Drawable):
-    _generator = rect_vertices
-    _outline_generator = rect_outline_vertices
+class RectActor(drawable.Drawable):
+    _generator = renderer.rect_vertices
+    _outline_generator = renderer.rect_outline_vertices
 
     def __init__(self,
                  size: glm.vec2 | list | tuple = (1., 1.),
@@ -86,9 +84,9 @@ class Rect(Drawable):
         self._draw([*self._position, *self._size, self._rotation, self._scale, (0., 0., 1., 1.), self._color])
         Actor.draw(self)
 
-class Circle(Drawable):
-    _generator = circle_vertices
-    _outline_generator = circle_outline_vertices
+class CircleActor(drawable.Drawable):
+    _generator = renderer.circle_vertices
+    _outline_generator = renderer.circle_outline_vertices
     
     def __init__(self,
                  diameter: float = 1.,
@@ -133,9 +131,9 @@ class Circle(Drawable):
         self._draw([*self._position, self._diameter, self._rotation, self._scale, self._color, self.segments])
         Actor.draw(self)
 
-class Ellipse(Drawable):
-    _generator = ellipse_vertices
-    _outline_generator = ellipse_outline_vertices
+class EllipseActor(drawable.Drawable):
+    _generator = renderer.ellipse_vertices
+    _outline_generator = renderer.ellipse_outline_vertices
 
     def __init__(self,
                  width: float = 1.,
@@ -180,9 +178,9 @@ class Ellipse(Drawable):
         self._draw([*self._position, self._width, self._height, self._rotation, self._scale, self._color, self.segments])
         Actor.draw(self)
 
-class Polygon(Drawable):
-    _generator = polygon_vertices
-    _outline_generator = polygon_outline_vertices
+class PolygonActor(drawable.Drawable):
+    _generator = renderer.polygon_vertices
+    _outline_generator = renderer.polygon_outline_vertices
  
     def __init__(self,
                  points: list | tuple,
@@ -226,4 +224,4 @@ class Polygon(Drawable):
         self._draw([*self._position, self._points, self._rotation, self._scale, self._color])
         Actor.draw(self)
 
-__all__ = ['Line', 'Rect', 'Circle', 'Ellipse', 'Polygon']
+__all__ = ['LineActor', 'RectActor', 'CircleActor', 'EllipseActor', 'PolygonActor']

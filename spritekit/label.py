@@ -20,9 +20,9 @@ from functools import reduce
 import platform
 
 from .actor import Actor
-from .cache import _find_file
-from .drawable import Drawable
-from .renderer import rect_vertices
+from .cache import find_file, load_font
+from . import _drawable as drawable
+from . import _renderer as renderer
 
 import moderngl
 from PIL import ImageFont, ImageDraw, Image
@@ -55,11 +55,11 @@ def _convert_color(color: tuple | list):
     assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 values"
     return tuple(min(max(v if isinstance(v, int) else int(v * 255.), 0), 255) for v in (color if len(color) == 4 else (*color, 255)))
 
-class Label(Drawable):
+class LabelActor(drawable.Drawable):
     def __init__(self,
                  text: str,
                  font: str | ImageFont.FreeTypeFont | ImageFont.ImageFont,
-                 font_size: int = 48,
+                 font_size: Optional[int] = None,
                  background: Optional[tuple | list] = None,
                  align: str = "left",
                  **kwargs):
@@ -68,13 +68,24 @@ class Label(Drawable):
         super().__init__(**kwargs)
         self._color = _convert_color(color)
         self._font_size = font_size
+        self._font = None
+        self._is_truetype = False
+        self._load_font(font, font_size)
         self._text = text
-        self.font = font
         self._background_color = _convert_color(background) if background is not None else (0, 0, 0, 0)
         self._texture = None
         self._align = align
         self._dirty = True
     
+    def _load_font(self, font: str | ImageFont.FreeTypeFont | ImageFont.ImageFont, font_size: Optional[int] = None):
+        if isinstance(font, str):
+            self._font = load_font(font, font_size)
+        elif isinstance(font, ImageFont.FreeTypeFont) or isinstance(font, ImageFont.ImageFont):
+            self._font = font
+        else:
+            raise ValueError(f"Unsupported font type: {type(font)}")
+        self._is_truetype = isinstance(self._font, ImageFont.FreeTypeFont)
+
     @property
     def text(self):
         return self._text
@@ -90,21 +101,7 @@ class Label(Drawable):
     
     @font.setter
     def font(self, value: str | ImageFont.FreeTypeFont | ImageFont.ImageFont):
-        match value:
-            case str():
-                found = _find_file(value, __font_folders__, __font_extensions__)
-                _, ext = os.path.splitext(found)
-                if ext in __pil_fonts__:
-                    self._font = ImageFont.load(found)
-                elif ext in __other_fonts__:
-                    self._font = ImageFont.truetype(found, self._font_size)
-                else:
-                    raise ValueError(f"Unsupported font extension: {ext}, supported extensions: {', '.join(__font_extensions__)}")
-            case ImageFont.FreeTypeFont() | ImageFont.ImageFont():
-                self._font = value
-            case _:
-                raise ValueError(f"Unsupported font type")
-        self._is_truetype = isinstance(self._font, ImageFont.FreeTypeFont)
+        self._load_font(value, self._font_size)
         self._dirty = True
     
     @property
@@ -114,6 +111,7 @@ class Label(Drawable):
     @font_size.setter
     def font_size(self, value: int):
         self._font_size = value
+        self._load_font(self._font, value)
         self._dirty = True
 
     @property
@@ -179,8 +177,10 @@ class Label(Drawable):
         if self._texture is not None:
             del self._texture
         self._texture = moderngl.get_context().texture(image.size, 4, image.tobytes())
-        return rect_vertices(*self._position, *self._texture.size, self._rotation, self._scale, (0., 0., 1., 1.), self._color)
+        return renderer.rect_vertices(*self._position, *self._texture.size, self._rotation, self._scale, (0., 0., 1., 1.), self._color)
     
     def draw(self):
         self._draw([])
         Actor.draw(self)
+
+__all__ = ["LabelActor"]

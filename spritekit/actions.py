@@ -20,7 +20,7 @@ from typing import Optional, Callable, Any, override
 from contextlib import contextmanager
 from queue import Queue
 
-from .timer import Timer
+from .timer import TimerActor
 from .actor import Actor
 from .easing import ease_linear_in_out
 
@@ -28,7 +28,7 @@ class ActionType:
     pass
 
 @dataclass
-class Action(ActionType, Timer):
+class ActionActor(ActionType, TimerActor):
     easing: Callable[[float, float, float, float], float] = staticmethod(ease_linear_in_out)
     actor: Optional[Actor] = None
     field: Optional[str | list[str]] = None
@@ -57,7 +57,7 @@ class Action(ActionType, Timer):
             "duration": kwargs.pop("duration", 1.),
             "cursor": kwargs.pop("cursor", None),
         }
-        Timer.__init__(self, **new_kwargs)
+        TimerActor.__init__(self, **new_kwargs)
         self.actor = kwargs.pop("actor", None)
         self.field = kwargs.pop("field", None)
         self.target = kwargs.pop("target", None)
@@ -105,10 +105,10 @@ class Action(ActionType, Timer):
             else:
                 obj = getattr(obj, self.field[i])
 
-class WaitAction(ActionType, Timer):
+class WaitAction(ActionType, TimerActor):
     def __init__(self, **kwargs):
         self._on_complete_usr = kwargs.pop("on_complete", None)
-        Timer.__init__(self, on_complete=self._on_complete, **kwargs)
+        TimerActor.__init__(self, on_complete=self._on_complete, **kwargs)
         self._completed = False
 
     @property
@@ -121,17 +121,17 @@ class WaitAction(ActionType, Timer):
             self._on_complete_usr()
         self.remove()
 
-class ActionSequence(ActionType, Timer, Queue):
+class ActionSequence(ActionType, TimerActor, Queue):
     def __init__(self, actions: list[ActionType], duration: float = 0., auto_start: bool = True, remove_on_complete: bool = True, repeat: bool = False):
         Queue.__init__(self)
         self._actions = actions
         for action in actions:
             self.put(action)
-        Timer.__init__(self,
-                       duration=duration,
-                       auto_start=auto_start,
-                       remove_on_complete=remove_on_complete,
-                       repeat=repeat)
+        TimerActor.__init__(self,
+                            duration=duration,
+                            auto_start=auto_start,
+                            remove_on_complete=remove_on_complete,
+                            repeat=repeat)
         self._head = None
         if auto_start:
             self.start()
@@ -185,4 +185,4 @@ class ActionSequence(ActionType, Timer, Queue):
     def stop(self):
         self._complete()
 
-__all__ = ["Action", "WaitAction", "ActionSequence"]
+__all__ = ["ActionActor", "WaitAction", "ActionSequence"]

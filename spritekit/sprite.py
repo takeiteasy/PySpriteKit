@@ -15,73 +15,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass, field
 from typing import Optional
 
 from .actor import Actor
 from .cache import load_texture
-from .shapes import Rect
+from .shapes import RectActor
 
 import glm
 import moderngl
 
-@dataclass
-class SpriteAnimation:
-    frames: list[tuple[int, int]]
-    fps: int
-
-    def __len__(self):
-        return len(self.frames)
-
-    def __getitem__(self, index: int):
-        return self.frames[index]
-
-@dataclass
-class SpriteSheet:
-    cell_size: tuple[int, int]
-    animations: dict[str, SpriteAnimation] = field(default_factory=dict)
-
-    def __getitem__(self, name: str):
-        assert name in self.animations, "Animation must be in animations"
-        return self.animations[name]
-
-class Sprite(Rect):
+class SpriteActor(RectActor):
     def __init__(self,
                  position: glm.vec2 | list | tuple,
                  texture: str | moderngl.Texture,
+                 size: Optional[glm.vec2 | list | tuple] = None,
                  clip: Optional[tuple | list] = None,
-                 sprite_sheet: Optional[SpriteSheet] = None,
-                 initial_animation: Optional[str] = None,
-                 loop: bool = True,
-                 auto_start: bool = True,
                  **kwargs):
         tmp = texture if isinstance(texture, moderngl.Texture) else load_texture(texture)
-        self._sprite_sheet = sprite_sheet
-        size = kwargs.pop("size", None)
-        if size is None:
-            size = tmp.size if self._sprite_sheet is None else self._sprite_sheet.cell_size
+        size = size if size is not None else tmp.size
         super().__init__(position=position,
                          size=size,
-                         on_added=self.play if auto_start else None,
                          **kwargs)
         self._texture = tmp
         if clip is not None:
             self._clip = self._convert_clip(clip)
         else:
             self._clip = (0., 0., 1., 1.)
-        self._current_frame = 0
-        self._current_time = 0.
-        self._loop = loop
-        self._playing = False
-        if self._sprite_sheet is not None:
-            animation = initial_animation
-            if animation is None:
-                if len(self._sprite_sheet.animations) > 0:
-                    animation = next(iter(self._sprite_sheet.animations))
-            self._current_animation = animation
-            self.clip = self.current_animation[self._current_frame]
-        else:
-            self._current_animation = None
     
     def _convert_clip(self, clip: tuple | list):
         assert len(clip) == 2, "Clip must be a tuple or list of 2 floats or ints"
@@ -121,62 +80,8 @@ class Sprite(Rect):
         self._clip = self._convert_clip(value)
         self._dirty = True
 
-    @property
-    def animation(self):
-        return self._current_animation
-    
-    @animation.setter
-    def animation(self, value: str):
-        assert value in self._sprite_sheet.animations, "Animation must be in sprite sheet"
-        self._current_animation = value
-    
-    @property
-    def current_animation(self):
-        return self._sprite_sheet[self._current_animation]
-    
-    @property
-    def frame(self):
-        return self._current_frame
-    
-    @frame.setter
-    def frame(self, value: int):
-        assert value < len(self._sprite_sheet[self._current_animation]), "Frame must be in range of animation"
-        self._current_frame = value
-    
-    @property
-    def loop(self):
-        return self._loop
-    
-    @loop.setter
-    def loop(self, value: bool):
-        self._loop = value
-    
-    @property
-    def playing(self):
-        return self._playing
-    
-    @playing.setter
-    def playing(self, value: bool):
-        if value:
-            self.play()
-        else:
-            self.stop()
-    
-    def step(self, dt: float):
-        super().step(dt)
-        if self._playing:
-            self._current_time += dt
-            if self._current_time >= 1. / self.current_animation.fps:
-                self._current_frame += 1
-                if self._current_frame >= len(self.current_animation):
-                    if self._loop:
-                        self._current_frame = 0
-                        self._current_time = 0.
-                    else:
-                        self.clip = self.current_animation[-1]
-                        self._playing = False
-                self.clip = self.current_animation[self._current_frame]
-
     def draw(self):
         self._draw([*self._position, *self._size, self._rotation, self._scale, self._clip, self._color])
         Actor.draw(self)
+
+__all__ = ["SpriteActor"]

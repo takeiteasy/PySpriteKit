@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .actor import Parent
-from .renderer import get_viewport, get_clear_color, set_viewport, set_clear_color 
-from .drawable import _convert_color
+from .actor import ActorParent
+from . import _renderer as renderer
+from . import _drawable as drawable
 from .window import window_size
 
-class Scene(Parent):
+class Scene(ActorParent):
     background_color = (0., 0., 0., 1.)
     window_size = (640, 480)
     window_title = "SpriteKit"
@@ -34,19 +34,19 @@ class Scene(Parent):
     
     @property
     def viewport(self):
-        return get_viewport()
+        return renderer.get_viewport()
     
     @viewport.setter
     def viewport(self, value: tuple[int, int]):
-        set_viewport(value)
+        renderer.set_viewport(value)
     
     @property
     def clear_color(self):
-        return get_clear_color()
+        return renderer.get_clear_color()
     
     @clear_color.setter
     def clear_color(self, value: tuple | list):
-        set_clear_color(_convert_color(value))
+        renderer.set_clear_color(drawable.convert_color(value))
     
     def enter(self):
         pass

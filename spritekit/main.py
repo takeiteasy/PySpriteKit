@@ -16,8 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .scene import Scene
-from .renderer import _init_renderer, flush
-from .window import _init_window, window_handle
+from . import _renderer as renderer
+from .window import _init_window, get_window
 
 __scene__ = []
 __next_scene = None
@@ -28,11 +28,11 @@ def main(cls):
     if __scene__:
         raise RuntimeError("@main already called")
     _init_window(*cls.window_size, cls.window_title, hints=cls.window_hints, frame_limit=cls.frame_limit)
-    _init_renderer()
+    renderer.init()
     scn = cls()
     __scene__.append(scn)
     scn.enter()
-    window = window_handle()
+    window = get_window()
 
     while not window.should_close:
         if not __scene__:
@@ -40,7 +40,7 @@ def main(cls):
         window.poll_events()
         scn.step(window.delta_time)
         scn.draw()
-        flush()
+        renderer.flush()
         window.swap_buffers()
 
         if __drop_scene:

@@ -17,6 +17,7 @@
 
 import os
 import pathlib
+import platform
 
 import moderngl
 from raudio import Wave, Music
@@ -29,7 +30,7 @@ __data_path__ = "assets"
 def _generate_paths(name, root, extension):
     return root + os.path.sep + name + extension, __data_path__ + os.path.sep + root + os.path.sep + name + extension, str(__SKPATH__ / root / name) + extension
 
-def _find_file(file_path, folder_names, extensions):
+def find_file(file_path, folder_names, extensions):
     if os.path.isfile(file_path):
         return file_path
     _, ext = os.path.splitext(file_path)
@@ -59,7 +60,7 @@ def _check_cache(type_name, path):
 def _ensure_cached(type_name, folder_names, extensions):
     def decorator(func):
         def wrapper(path, **kwargs):
-            found = _find_file(path, folder_names, extensions)
+            found = find_file(path, folder_names, extensions)
             cached = _check_cache(type_name, found)
             if cached:
                 return cached
@@ -110,11 +111,73 @@ def load_wave(name):
 def load_music(name):
     return Music(name)
 
+def _system_font_paths():
+    def _clean(paths):
+        return [path for path in paths if os.path.isdir(path)]
+    match platform.system():
+        case "Windows":
+            return _clean([os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts")])
+        case "Darwin":
+            return _clean(["/Library/Fonts",
+                           "/System/Library/Fonts",
+                           os.path.expanduser("~/Library/Fonts")])
+        case "Linux":
+            return _clean(["/usr/share/fonts",
+                           "/usr/local/share/fonts",
+                           os.path.expanduser("~/.fonts"),
+                           os.path.expanduser("~/.local/share/fonts")])
+        case _:
+            return []
+
+__pil_fonts__ = [".pil", ".pbm"]
+__truetype_fonts__ = [".ttf", ".ttc", ".otf", ".pfa", ".pfb", ".cff", ".fnt", ".fon", ".bdf", ".pcf", ".woff", ".woff2", ".dfont"]
+__font_folders__ = ("fonts", *_system_font_paths())
+__truetype_cache__ = {}
+
+def _load_truetype_font(name, size):
+    font = ImageFont.truetype(name, size)
+    if not name in __truetype_cache__:
+        __truetype_cache__[name] = {}
+    __truetype_cache__[name][size] = font
+    return font
+
+def load_truetype_font(name, size):
+    found = find_file(name, __font_folders__, __truetype_fonts__)
+    if found in __truetype_cache__:
+        if size in __truetype_cache__[found]:
+            return __truetype_cache__[found][size]
+        else:
+            return _load_truetype_font(found, size)
+    else:
+        return _load_truetype_font(found, size)
+
+@_ensure_cached(type_name="fonts",
+                folder_names=__font_folders__,
+                extensions=__pil_fonts__)
+def load_bitmap_font(name):
+    return ImageFont.load(name)
+
+def load_font(name, size=None):
+    if size is None:
+        return load_bitmap_font(name)
+    else:
+        return load_truetype_font(name, size)
+
 def set_data_path(path):
     global __data_path__
     __data_path__ = path
 
 def clear_cache():
     __cache__.clear()
+    __truetype_cache__.clear()
 
-__all__ = ["load_image", "load_texture", "load_wave", "load_music", "clear_cache", "set_data_path"]
+__all__ = ["find_file",
+           "load_image",
+           "load_texture",
+           "load_wave",
+           "load_music",
+           "clear_cache",
+           "set_data_path",
+           "load_font",
+           "load_bitmap_font",
+           "load_truetype_font"]

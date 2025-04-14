@@ -18,13 +18,12 @@
 from typing import Optional, Callable
 
 from .actor import Actor
-from .timer import Timer
-from .renderer import *
+from .timer import TimerActor
 from .cache import *
 
 import raudio as r
 
-class _AudioNode(Actor):
+class BaseAudio(Actor):
     def __init__(self,
                  pitch: float = 1.,
                  volume: float = 1.,
@@ -90,14 +89,14 @@ class _AudioNode(Actor):
     def __len__(self):
         return len(self._sound)
 
-class Sound(_AudioNode):
+class SoundActor(BaseAudio):
     def __init__(self,
                  source: str | r.Wave,
                  loop: bool = False,
                  times: int = 1,
                  wait: float | int = 0.,
                  **kwargs):
-        _AudioNode.__init__(self, on_added=self._start, **kwargs)
+        BaseAudio.__init__(self, on_added=self._start, **kwargs)
         self._sound = r.Sound(load_wave(source) if isinstance(source, str) else source)
         self._loop = loop
         assert times > 0, "Times must be a positive integer"
@@ -114,7 +113,7 @@ class Sound(_AudioNode):
     
     def _restart(self):
         if self._wait > 0. and not self._wait_timer:
-            self.add(Timer(duration=self._wait, on_complete=self._start))
+            self.add(TimerActor(duration=self._wait, on_complete=self._start))
             self._wait_timer = True
         else:
             self._start()
@@ -132,7 +131,7 @@ class Sound(_AudioNode):
             else:
                 self.remove()
 
-class Music(_AudioNode):    
+class MusicActor(BaseAudio):    
     def __init__(self,
                  source: str,
                  loop: bool = False,
@@ -140,7 +139,7 @@ class Music(_AudioNode):
                  on_complete: Optional[Callable[[], None]] = None,
                  remove_on_complete: bool = True,
                  **kwargs):
-        _AudioNode.__init__(self, on_added=self.start if auto_start else None, on_removed=self.stop, **kwargs)
+        BaseAudio.__init__(self, on_added=self.start if auto_start else None, on_removed=self.stop, **kwargs)
         self._sound = load_music(source)
         self._loop = loop
         self._autostart = auto_start
@@ -181,4 +180,4 @@ class Music(_AudioNode):
                     if self._remove_on_complete:
                         self.remove()
 
-__all__ = ["Sound", "Music"]
+__all__ = ["SoundActor", "MusicActor"]

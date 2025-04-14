@@ -19,12 +19,10 @@ from .actions import *
 from .actor import *
 from .audio import *
 from .cache import *
-from .drawable import *
 from .easing import *
 from .emitter import *
 from .label import *
 from .main import *
-from .renderer import *
 from .scene import *
 from .shader import *
 from .shapes import *

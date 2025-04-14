@@ -19,9 +19,9 @@ from typing import Callable, Type
 from copy import deepcopy
 
 from .actor import Actor
-from .timer import Timer
+from .timer import TimerActor
 
-class Emitter(Timer):
+class EmitterActor(TimerActor):
     def __init__(self,
                  emit: Callable[[], Actor] | Actor | tuple[Type[Actor], dict] = None,
                  **kwargs):
@@ -52,4 +52,4 @@ class Emitter(Timer):
         if self._user_on_complete:
             self._user_on_complete()
 
-__all__ = ["Emitter"]
+__all__ = ["EmitterActor"]

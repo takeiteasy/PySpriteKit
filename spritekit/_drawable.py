@@ -19,11 +19,11 @@ import math
 from typing import Optional, Callable, Any
 
 from .actor import Actor
-from .renderer import draw as draw_call
+from . import _renderer as renderer
 
 import glm
 
-def _convert_color(color: tuple | list):
+def convert_color(color: tuple | list):
     assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 values"
     return tuple(min(max(v if isinstance(v, float) else float(v) / 255., 0.), 1.) for v in (color if len(color) == 4 else (*color, 1.)))
 
@@ -58,7 +58,7 @@ class Drawable(Actor):
         self._rotation = math.radians(rotation) if degrees else rotation
         self._degrees = degrees
         self._scale = scale
-        self._color = _convert_color(color)
+        self._color = convert_color(color)
         self._wireframe = wireframe
 
     @property
@@ -94,7 +94,7 @@ class Drawable(Actor):
 
     @color.setter
     def color(self, value: list | tuple):
-        self._color = _convert_color(value)
+        self._color = convert_color(value)
         self._dirty = True
 
     @property
@@ -114,5 +114,5 @@ class Drawable(Actor):
             else:
                 self._vertices = self._generator(*args)
             self._dirty = False
-        draw_call(self._vertices, None if self._wireframe else self._texture)
+        renderer.draw(self._vertices, None if self._wireframe else self._texture)
 

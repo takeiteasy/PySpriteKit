@@ -278,8 +278,8 @@ def _check_renderer(func):
         return func(*args, **kwargs)
     return wrapper
 
-def _init_renderer(viewport: Optional[tuple[int | float, int | float]] = None,
-                   clear_color: tuple[float, float, float, float] = (0, 0, 0, 1)):
+def init(viewport: Optional[tuple[int | float, int | float]] = None,
+         clear_color: tuple[float, float, float, float] = (0, 0, 0, 1)):
     global __renderer__
     assert __renderer__ is None, "Renderer already initialized"
     __renderer__ = Renderer(viewport, clear_color)
@@ -307,16 +307,3 @@ def draw(vertices, texture=None):
 @_check_renderer
 def flush():
     __renderer__.flush()
-
-__all__ = [
-    'rect_vertices',
-    'rect_outline_vertices',
-    'line_vertices',
-    'ellipse_vertices',
-    'ellipse_outline_vertices',
-    'circle_vertices',
-    'circle_outline_vertices',
-    'polygon_vertices',
-    'polygon_outline_vertices',
-    'Renderer'
-]

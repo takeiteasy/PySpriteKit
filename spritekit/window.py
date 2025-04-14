@@ -888,7 +888,7 @@ def _window_attrib(func):
     return wrapper
 
 @_window_attrib
-def window_handle():
+def get_window():
     return __window__
 
 @_window_attrib
@@ -911,5 +911,5 @@ __all__ = ["KeyEvent", "CharEvent", "ScrollEvent", "MouseButtonEvent",
            "CursorEnterEvent", "CursorPosEvent", "WindowSizeEvent", "WindowPosEvent",
            "WindowCloseEvent", "WindowRefreshEvent", "WindowFocusEvent",
            "WindowIconifyEvent", "FrameBufferSizeEvent", "Hints", "Keys", "Mice",
-           "Joystick", "Monitor", "VideoMode", "window_handle",
+           "Joystick", "Monitor", "VideoMode", "get_window",
            "window_should_close", "window_width", "window_height", "window_size"]

@@ -25,7 +25,7 @@ class ActorType:
     on_added: Optional[Callable[[], Any]] = None
     on_removed: Optional[Callable[[], Any]] = None
 
-class Parent:
+class ActorParent:
     def __init__(self):
         self.children = []
         self.parent = None
@@ -70,16 +70,16 @@ class Parent:
     def clear(self):
         self.children = []
 
-class Actor(ActorType, Parent):
+class Actor(ActorType, ActorParent):
     def __init__(self, **kwargs):
         ActorType.__init__(self, **kwargs)
-        Parent.__init__(self)
+        ActorParent.__init__(self)
 
     def __str__(self):
         return f"(Node(\"{self.name}\", {self.__class__.__name__}))"
 
     def remove(self):
-        if self.parent is not None and issubclass(self.parent, Parent):
+        if self.parent is not None and issubclass(self.parent, ActorParent):
             self.parent.remove(self)
     
     def step(self, delta: float):
@@ -90,4 +90,4 @@ class Actor(ActorType, Parent):
         for child in self.children:
             child.draw()
 
-__all__ = ["Actor", "Parent"]
+__all__ = ["Actor", "ActorParent"]
