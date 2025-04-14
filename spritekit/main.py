@@ -33,9 +33,10 @@ def load_scene(cls):
     __next_scene__ = cls
 
 def main(cls):
+    global __scene__, __next_scene__
     _init_window(*cls.window_size, cls.window_title, hints=cls.window_hints, frame_limit=cls.frame_limit)
     renderer.init()
-    load_scene(cls)
+    _load_scene(cls)
     window = get_window()
     while not window.should_close:
         window.poll_events()
