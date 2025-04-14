@@ -19,7 +19,7 @@
 - [ ] 3D render to texture (displayed in 2D)
 - [ ] 2D Physics
 - [ ] Bezier curves
-- [ ] Video
+- [ ] Video + GIFs
 - [ ] Add examples
 - [ ] Add documentation
 

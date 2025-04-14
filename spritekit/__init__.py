@@ -19,6 +19,7 @@ from .actions import *
 from .actor import *
 from .audio import *
 from .cache import *
+from .camera import *
 from .easing import *
 from .emitter import *
 from .label import *

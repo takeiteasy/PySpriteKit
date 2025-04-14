@@ -20,6 +20,7 @@ from . import _renderer as renderer
 from . import _drawable as drawable
 from .state import FiniteStateMachine
 from .window import window_size
+from .camera import Camera
 
 class Scene(ActorParent, FiniteStateMachine):
     background_color = (0., 0., 0., 1.)
@@ -29,6 +30,7 @@ class Scene(ActorParent, FiniteStateMachine):
     frame_limit = None
 
     def __init__(self, **kwargs):
+        self._camera = kwargs.pop("camera", Camera())
         ActorParent.__init__(self)
         FiniteStateMachine.__init__(self, **kwargs)
         self.viewport = window_size()
@@ -50,6 +52,14 @@ class Scene(ActorParent, FiniteStateMachine):
     def clear_color(self, value: tuple | list):
         renderer.set_clear_color(drawable.convert_color(value))
     
+    @property
+    def camera(self):
+        return self._camera
+    
+    @camera.setter
+    def camera(self, value: Camera):
+        self._camera = value
+    
     def enter(self):
         pass
 
@@ -61,6 +71,8 @@ class Scene(ActorParent, FiniteStateMachine):
             child.step(delta)
 
     def draw(self):
+        if self.camera.dirty:
+            renderer.set_world_matrix(self.camera.matrix)
         for child in reversed(self.children):
             child.draw()
 

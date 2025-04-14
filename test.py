@@ -3,6 +3,10 @@ import spritekit as sk
 @sk.main
 class TestScene(sk.Scene):
     def enter(self):
+        self.camera.position = (320, 240)
+        self.camera.rotation = 45
+        self.camera.zoom = .5
+
         self.add(sk.SpriteActor(position=(0, 0),
                                 texture="pear"))
         self.add(sk.LineActor(position=(0, 0),

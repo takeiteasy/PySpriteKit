@@ -23,7 +23,8 @@ class VsAttrs(AttributeBlock):
     in_color = vec4()
 
 class VsUniforms(UniformBlock):
-    mvp = mat4()
+    view = mat4()
+    world = mat4()
 
 class VsOut(ShaderInterface):
     gl_Position = vec4()
@@ -31,7 +32,7 @@ class VsOut(ShaderInterface):
     out_color = vec4()
 
 def default_vertex(attr: VsAttrs, uniforms: VsUniforms) -> VsOut:
-    return VsOut(gl_Position=uniforms.mvp * vec4(attr.position, 0., 1.),
+    return VsOut(gl_Position=uniforms.view * uniforms.world * vec4(attr.position, 0., 1.),
                     out_texcoords=attr.texcoords,
                     out_color=attr.in_color)
 

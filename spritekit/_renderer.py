@@ -27,10 +27,11 @@ from pyglsl import VertexStage, FragmentStage
 import numpy as np
 
 class Batch:
-    def __init__(self, program, mvp, texture=None):
+    def __init__(self, program, view, world, texture=None):
         self._ctx = moderngl.get_context()
         self._program = program
-        self._mvp = mvp
+        self._view = view
+        self._world = world
         self._texture = texture
         self._vertices = []
     
@@ -60,7 +61,8 @@ class Batch:
             self._ctx.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA)
             vao.program['use_texture'] = 0
         self._ctx.disable(self._ctx.DEPTH_TEST)
-        vao.program['mvp'].write(self._mvp)
+        vao.program['view'].write(self._view)
+        vao.program['world'].write(self._world)
         vao.render()
 
 class Renderer:
@@ -71,8 +73,9 @@ class Renderer:
         self._program = self._ctx.program(vertex_shader=VertexStage(default_vertex).compile(),
                                           fragment_shader=FragmentStage(default_fragment).compile())
         self.size = window_size() if viewport is None else viewport
-        self._view = None
-        self._dirty = False
+        self._view = glm.mat4()
+        self._world = glm.mat4()
+        self._dirty = True
         self._update_view()
         self.clear_color = glm.vec4(*clear_color)
         self._batches = []
@@ -108,11 +111,19 @@ class Renderer:
     def view(self):
         return self._view
     
+    @property
+    def world(self):
+        return self._world
+
+    @world.setter
+    def world(self, value: glm.mat4):
+        self._world = value
+    
     def draw(self, vertices, texture=None):
         if self._current_batch is None or self._current_batch._texture != texture:
             if self._current_batch is not None:
                 self._batches.append(self._current_batch)
-            self._current_batch = Batch(self._program, self._view, texture)
+            self._current_batch = Batch(self._program, self._view, self._world, texture)
         self._current_batch.add(vertices)
 
     def flush(self):
@@ -156,6 +167,10 @@ def set_viewport(viewport: tuple[int | float, int | float]):
 @_check_renderer
 def set_clear_color(clear_color: tuple[float, float, float, float]):
     __renderer__.clear_color = clear_color
+
+@_check_renderer
+def set_world_matrix(world: glm.mat4):
+    __renderer__.world = world
 
 @_check_renderer
 def draw(vertices, texture=None):

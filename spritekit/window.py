@@ -850,7 +850,7 @@ __window__ = None
 
 def _init_window(width: int = 640,
                  height: int = 480,
-                 title: str = "quickwindow",
+                 title: str = "PySpriteKit",
                  versions: Optional[tuple[int, int, bool]] = None,
                  frame_limit: Optional[int | float] = None,
                  hints: Optional[dict] = None):
