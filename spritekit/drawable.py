@@ -112,6 +112,7 @@ class Drawable(Actor):
 
     def _draw(self, args: list[Any]):
         if self._dirty:
+            self._vertices = []
             if self._wireframe and self._outline_generator is not None and callable(self._outline_generator):
                 self._vertices = self._outline_generator(*args)
             else:

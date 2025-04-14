@@ -18,6 +18,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
+from .actor import Actor
 from .renderer import load_texture
 from .shapes import Rect
 
@@ -178,4 +179,4 @@ class Sprite(Rect):
 
     def draw(self):
         self._draw([*self._position, *self._size, self._rotation, self._scale, self._clip, self._color])
-        super().draw()
+        Actor.draw(self)
