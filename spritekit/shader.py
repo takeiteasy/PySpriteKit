@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from pyglsl.glsl import *
+from pyglsl import ShaderDef
 
 class VsAttrs(AttributeBlock):
     position = vec2()
@@ -52,4 +53,6 @@ def default_fragment(vs_out: VsOut, uniforms: FsUniforms) -> FsOut:
     else:
         return FsOut(out_color=vs_out.out_color)
 
-__all__ = ['default_vertex', 'default_fragment']
+default_shader = ShaderDef(vertex_shader=default_vertex, fragment_shader=default_fragment)
+
+__all__ = ['default_shader']

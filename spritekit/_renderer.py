@@ -1,4 +1,4 @@
-# spritekit/renderer.py
+# spritekit/_renderer.py
 #
 # Copyright (C) 2025 George Watson
 #
@@ -19,7 +19,7 @@ import platform
 from typing import Optional
 
 from .window import window_size
-from .shader import default_vertex, default_fragment
+from .shader import default_shader
 
 import moderngl
 import glm
@@ -70,8 +70,8 @@ class Renderer:
                  viewport: Optional[tuple[int | float, int | float]] = None,
                  clear_color: tuple[float, float, float, float] = (0, 0, 0, 1)):
         self._ctx = moderngl.get_context()
-        self._program = self._ctx.program(vertex_shader=VertexStage(default_vertex).compile(),
-                                          fragment_shader=FragmentStage(default_fragment).compile())
+        vs, fs = default_shader.compile()
+        self._program = self._ctx.program(vertex_shader=vs, fragment_shader=fs)
         self.size = window_size() if viewport is None else viewport
         self._view = glm.mat4()
         self._world = glm.mat4()

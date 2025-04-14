@@ -1,4 +1,4 @@
-# spritekit/actors.py
+# spritekit/_drawable.py
 #
 # Copyright (C) 2025 George Watson
 #
