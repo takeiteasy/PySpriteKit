@@ -3,19 +3,28 @@
 > [!WARNING]
 > Work in progress, see [TODO](#todo)
 
-2D scene+actor framework
+2D scene+actor framework, see [test.py](https://github.com/takeiteasy/PySpriteKit/blob/master/test.py) for working example.
+
+> [!NOTE]
+> `pip install spritekit==0.2.1`
+
+## Features
+
+- [X] Scenes
+- [X] Batched renderer
+- [X] Easy + Flexible
+- [X] Line, Rectangle, Ellipse, Circle, Polygon
+- [X] Sprites
+- [X] Labels
+- [X] Actions, Timer, Emitter
+- [X] Music + Sounds
 
 ## TODO
 
-- [X] ~~Action~~
-- [X] ~~Timer~~
-- [X] ~~Emitter~~
-- [X] ~~Sprites~~ + *Spritesheets*
-- [X] ~~Audio~~
-- [X] ~~Fonts + Label~~
-- [X] *Finate state machine*
-- [ ] Event handler
-- [ ] Framebuffer + Shader classes
+- [ ] SpriteSheets + Animation
+- [ ] Input handling
+- [ ] Event broadcasting
+- [ ] Framebuffers + Shader classes
 - [ ] 3D render to texture (displayed in 2D)
 - [ ] 2D Physics
 - [ ] Bezier curves
