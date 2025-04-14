@@ -59,6 +59,7 @@ class Scene(ActorParent, FiniteStateMachine):
     @camera.setter
     def camera(self, value: Camera):
         self._camera = value
+        self._camera.dirty = True
     
     def enter(self):
         pass

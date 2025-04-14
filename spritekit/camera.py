@@ -68,6 +68,10 @@ class Camera:
     def dirty(self):
         return self._dirty
 
+    @dirty.setter
+    def dirty(self, value: bool):
+        self._dirty = value
+
     @property
     def matrix(self):
         if self._dirty:
