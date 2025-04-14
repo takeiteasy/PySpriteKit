@@ -9,4 +9,4 @@ class TestScene(spritekit.Scene):
         self.add(spritekit.Circle(position=(0, 0), diameter=100, color=(0., 0., 1., 1.)))
         self.add(spritekit.Ellipse(position=(0, 0), width=200, height=50, color=(0., 1., 1., 1.)))
         self.add(spritekit.Polygon(position=(0, 0), points=((0, 0), (100, 0), (50, 100)), color=(1., 0., 1., 1.)))
-        self.add(spritekit.Label(text="Hello, world!", font="ComicMono", font_size=72, color=(1., 0., 0., 1.)))
+        self.add(spritekit.Label(text="Hello, world!\nGoodbye, world!", font="ComicMono", font_size=72, color=(1., 0., 0., 1.)))
