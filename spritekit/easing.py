@@ -54,8 +54,6 @@
 #   ---------------------------------------------------------------------------------
 
 from math import asin, cos, pi, sin, sqrt
-from random import choice as random_choice
-from typing import Callable
 
 # Linear Easing functions
 def ease_linear_none(t: float, b: float, c: float, d: float) -> float:
@@ -312,5 +310,4 @@ __all = [
     'ease_elastic_in',
     'ease_elastic_out',
     'ease_elastic_in_out',
-    'random_ease'
 ]

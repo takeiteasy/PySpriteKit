@@ -134,22 +134,16 @@ __truetype_fonts__ = [".ttf", ".ttc", ".otf", ".pfa", ".pfb", ".cff", ".fnt", ".
 __font_folders__ = ("fonts", *_system_font_paths())
 __truetype_cache__ = {}
 
-def _load_truetype_font(name, size):
-    font = ImageFont.truetype(name, size)
-    if not name in __truetype_cache__:
-        __truetype_cache__[name] = {}
-    __truetype_cache__[name][size] = font
-    return font
-
 def load_truetype_font(name, size):
     found = find_file(name, __font_folders__, __truetype_fonts__)
     if found in __truetype_cache__:
         if size in __truetype_cache__[found]:
             return __truetype_cache__[found][size]
-        else:
-            return _load_truetype_font(found, size)
-    else:
-        return _load_truetype_font(found, size)
+    font = ImageFont.truetype(found, size)
+    if not found in __truetype_cache__:
+        __truetype_cache__[found] = {}
+    __truetype_cache__[found][size] = font
+    return font
 
 @_ensure_cached(type_name="fonts",
                 folder_names=__font_folders__,

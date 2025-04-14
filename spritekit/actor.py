@@ -31,7 +31,7 @@ class ActorParent:
         self.parent = None
     
     def add(self, children: ActorType | list[ActorType]):
-        if isinstance(children, ActorType):
+        if not isinstance(children, list):
             children = [children]
         for child in children:
             self.children.insert(0, child)
@@ -90,4 +90,4 @@ class Actor(ActorType, ActorParent):
         for child in self.children:
             child.draw()
 
-__all__ = ["Actor", "ActorParent"]
+__all__ = ["Actor", "ActorParent", "ActorType"]
