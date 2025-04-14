@@ -15,47 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 from functools import reduce
-import platform
 
-from .actor import Actor
-from .cache import find_file, load_font
-from . import _drawable as drawable
-from . import _renderer as renderer
+from .cache import load_font
+from .shapes import RectActor
 
 import moderngl
 from PIL import ImageFont, ImageDraw, Image
 from typing import Optional
 
-def _system_font_paths():
-    def _clean(paths):
-        return [path for path in paths if os.path.isdir(path)]
-    match platform.system():
-        case "Windows":
-            return _clean([os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts")])
-        case "Darwin":
-            return _clean(["/Library/Fonts",
-                           "/System/Library/Fonts",
-                           os.path.expanduser("~/Library/Fonts")])
-        case "Linux":
-            return _clean(["/usr/share/fonts",
-                           "/usr/local/share/fonts",
-                           os.path.expanduser("~/.fonts"),
-                           os.path.expanduser("~/.local/share/fonts")])
-        case _:
-            return []
-
-__pil_fonts__ = [".pil", ".pbm"]
-__other_fonts__ = [".ttf", ".ttc", ".otf", ".pfa", ".pfb", ".cff", ".fnt", ".fon", ".bdf", ".pcf", ".woff", ".woff2", ".dfont"]
-__font_extensions__ = __pil_fonts__ + __other_fonts__
-__font_folders__ = ("fonts", *_system_font_paths())
-
 def _convert_color(color: tuple | list):
     assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 values"
     return tuple(min(max(v if isinstance(v, int) else int(v * 255.), 0), 255) for v in (color if len(color) == 4 else (*color, 255)))
 
-class LabelActor(drawable.Drawable):
+class LabelActor(RectActor):
     def __init__(self,
                  text: str,
                  font: str | ImageFont.FreeTypeFont | ImageFont.ImageFont,
@@ -64,7 +37,6 @@ class LabelActor(drawable.Drawable):
                  align: str = "left",
                  **kwargs):
         color = kwargs.pop("color", (255, 255, 255, 255))
-        self._generator = self._rebuild
         super().__init__(**kwargs)
         self._color = _convert_color(color)
         self._font_size = font_size
@@ -72,6 +44,7 @@ class LabelActor(drawable.Drawable):
         self._is_truetype = False
         self._load_font(font, font_size)
         self._text = text
+        self._size = tuple(self._calculate_full_size2(text.split("\n")))
         self._background_color = _convert_color(background) if background is not None else (0, 0, 0, 0)
         self._texture = None
         self._align = align
@@ -157,30 +130,34 @@ class LabelActor(drawable.Drawable):
             text_width, text_height = self._font.getsize(text)
         return text_width, text_height
     
-    def _rebuild(self):
-        lines = self._text.split("\n")
+    def _calculate_full_size(self, lines: list[str]):
         sizes = [self._calculate_size(line) for line in lines]
         max_width = max(size[0] for size in sizes)
         total_height = reduce(lambda x, y: x + y, [size[1] for size in sizes])
-        image = Image.new("RGBA", (max_width, total_height), self._background_color)
+        return max_width, total_height, sizes
+    
+    def _calculate_full_size2(self, lines: list[str]):
+        width, height, _ = self._calculate_full_size(lines)
+        return width, height
+    
+    def _generate_vertices(self):
+        lines = self._text.split("\n")
+        width, height, sizes = self._calculate_full_size(lines)
+        image = Image.new("RGBA", (width, height), self._background_color)
         draw = ImageDraw.Draw(image)
         for y, line in enumerate(lines):
             match self._align:
                 case "left":
                     x = 0
                 case "right":
-                    x = max_width - sizes[y][0]
+                    x = width - sizes[y][0]
                 case "center":
-                    x = (max_width - sizes[y][0]) / 2
+                    x = (width - sizes[y][0]) / 2
             draw.text((x, y * sizes[y][1]), line, font=self._font, fill=self._color)
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
         if self._texture is not None:
             del self._texture
         self._texture = moderngl.get_context().texture(image.size, 4, image.tobytes())
-        return renderer.rect_vertices(*self._position, *self._texture.size, self._rotation, self._scale, (0., 0., 1., 1.), self._color)
-    
-    def draw(self):
-        self._draw([])
-        Actor.draw(self)
+        return super()._generate_vertices()
 
 __all__ = ["LabelActor"]

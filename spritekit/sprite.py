@@ -17,7 +17,6 @@
 
 from typing import Optional
 
-from .actor import Actor
 from .cache import load_texture
 from .shapes import RectActor
 
@@ -79,9 +78,5 @@ class SpriteActor(RectActor):
     def clip(self, value: tuple | list):
         self._clip = self._convert_clip(value)
         self._dirty = True
-
-    def draw(self):
-        self._draw([*self._position, *self._size, self._rotation, self._scale, self._clip, self._color])
-        Actor.draw(self)
 
 __all__ = ["SpriteActor"]

@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import math
-from typing import Optional, Callable, Any
 
 from .actor import Actor
 from . import _renderer as renderer
@@ -28,9 +27,6 @@ def convert_color(color: tuple | list):
     return tuple(min(max(v if isinstance(v, float) else float(v) / 255., 0.), 1.) for v in (color if len(color) == 4 else (*color, 1.)))
 
 class Drawable(Actor):
-    _generator: Optional[Callable[[], list[float]]] = None
-    _outline_generator: Optional[Callable[[], list[float]]] = None
-
     def __init__(self,
                  position: glm.vec2 | list | tuple = (0., 0.),
                  rotation: float = 0.,
@@ -43,16 +39,6 @@ class Drawable(Actor):
         self._vertices = []
         self._texture = None
         super().__init__(**kwargs)
-        if self.__class__._generator is not None:
-            self._generator = staticmethod(self.__class__._generator)
-        else:
-            if not hasattr(self, '_generator'):
-                self._generator = None
-        if self.__class__._outline_generator is not None:
-            self._outline_generator = staticmethod(self.__class__._outline_generator)
-        else:
-            if not hasattr(self, '_outline_generator'):
-                self._outline_generator = None
         assert len(position) == 2, "Position must be a 2D vector"
         self._position = glm.vec2(*position)
         self._rotation = math.radians(rotation) if degrees else rotation
@@ -105,14 +91,20 @@ class Drawable(Actor):
     def wireframe(self, value: bool):
         self._wireframe = value
         self._dirty = True
+    
+    def _generate_vertices(self):
+        return [*self._position, 0., 0., *self._color]
 
-    def _draw(self, args: list[Any]):
+    def _generate_outline_vertices(self):
+        return [*self._position, 0., 0., *self._color]
+
+    def draw(self):
         if self._dirty:
-            self._vertices = []
-            if self._wireframe and self._outline_generator is not None and callable(self._outline_generator):
-                self._vertices = self._outline_generator(*args)
+            if self._wireframe:
+                self._vertices = self._generate_outline_vertices()
             else:
-                self._vertices = self._generator(*args)
+                self._vertices = self._generate_vertices()
             self._dirty = False
         renderer.draw(self._vertices, None if self._wireframe else self._texture)
+        super().draw()
 

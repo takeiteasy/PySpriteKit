@@ -27,5 +27,6 @@ from .scene import *
 from .shader import *
 from .shapes import *
 from .sprite import *
+from .state import *
 from .timer import *
 from .window import *

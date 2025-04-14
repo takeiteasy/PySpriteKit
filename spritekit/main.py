@@ -15,16 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .scene import Scene
 from . import _renderer as renderer
 from .window import _init_window, get_window
 
 __scene__ = []
-__next_scene = None
-__drop_scene = None
 
 def main(cls):
-    global __scene__, __drop_scene, __next_scene
+    global __scene__
     if __scene__:
         raise RuntimeError("@main already called")
     _init_window(*cls.window_size, cls.window_title, hints=cls.window_hints, frame_limit=cls.frame_limit)
@@ -43,29 +40,10 @@ def main(cls):
         renderer.flush()
         window.swap_buffers()
 
-        if __drop_scene:
-            if isinstance(__drop_scene, list):
-                for _scn in reversed(__drop_scene):
-                    _scn.exit()
-            elif isinstance(__drop_scene, Scene):
-                __drop_scene.exit()
-            else:
-                raise RuntimeError("Invalid Scene")
-            __scene__ = __scene__[:-len(__drop_scene)]
-            if __scene__:
-                scn = __scene__[-1]
-                scn.restored()
-            __drop_scene = None
-        if __next_scene:
-            if isinstance(__next_scene, Scene):
-                if __scene__:
-                    __scene__[-1].background()
-                __scene__.append(__next_scene)
-                scn = __next_scene
-                scn.enter()
-                __next_scene = None
-            else:
-                raise RuntimeError("Invalid Scene")
     return cls
 
-__all__ = ['main']
+def quit():
+    window = get_window()
+    window.should_close = True
+
+__all__ = ['main', 'quit']

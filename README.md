@@ -7,19 +7,19 @@
 
 ## TODO
 
-- [X] ~~Action Nodes~~
-- [X] ~~Timer Node~~
-- [X] ~~Emitter Node~~
-- [X] ~~Sprites + Spritesheets~~
-- [X] ~~Audio nodes~~
-- [X] ~~Fonts + Label node~~
-- [ ] Finate state machine
-- [ ] Scene Director class
+- [X] ~~Action~~
+- [X] ~~Timer~~
+- [X] ~~Emitter~~
+- [X] ~~Sprites~~ + *Spritesheets*
+- [X] ~~Audio~~
+- [X] ~~Fonts + Label~~
+- [X] *Finate state machine*
+- [ ] Event handler
 - [ ] Framebuffer + Shader classes
-- [ ] 3D Nodes (displayed in 2D)
+- [ ] 3D render to texture (displayed in 2D)
 - [ ] 2D Physics
 - [ ] Bezier curves
-- [ ] Video Node
+- [ ] Video
 - [ ] Add examples
 - [ ] Add documentation
 
