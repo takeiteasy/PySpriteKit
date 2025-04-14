@@ -32,6 +32,15 @@ class SceneParent:
             scene.parent = self
             scene.enter()
     
+    @property
+    def scenes(self):
+        return self._scenes
+    
+    @scenes.setter
+    def scenes(self, value: list[SceneType] | SceneType):
+        self._scenes = []
+        self.push_scene(value)
+    
     def push_scene(self, scenes: SceneType | list[SceneType]):
         if not isinstance(scenes, list):
             scenes = [scenes]

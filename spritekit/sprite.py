@@ -46,29 +46,14 @@ class SpriteActor(RectActor):
         tx, ty = self._texture.size
         cx, cy = self._size
         x, y = glm.vec2(*clip) * glm.vec2(cx, cy)
+        assert x >= 0 and x <= tx, "Clip x must be between 0 and the texture width"
+        assert y >= 0 and y <= ty, "Clip y must be between 0 and the texture height"
+        assert x + cx >= 0 and x + cx <= tx, "Clip x + width must be between 0 and the texture width"
+        assert y + cy >= 0 and y + cy <= ty, "Clip y + height must be between 0 and the texture height"
         return (x / tx,
                 1.0 - (y + cy) / ty,
                 (x + cx) / tx,
                 1.0 - y / ty)
-    
-    def play(self):
-        if not self._playing and self._current_animation is not None and self._sprite_sheet is not None:
-            self._current_time = 0.
-            self._current_frame = 0
-            self.clip = self._sprite_sheet[self._current_animation][self._current_frame]
-    
-    def pause(self):
-        if self._playing:
-            self._playing = False
-    
-    def resume(self):
-        if not self._playing:
-            self._playing = True
-    
-    def stop(self):
-        self._playing = False
-        self._current_time = 0.
-        self._current_frame = 0
     
     @property
     def clip(self):

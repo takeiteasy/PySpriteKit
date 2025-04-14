@@ -3,45 +3,10 @@
 > [!WARNING]
 > Work in progress, see [TODO](#todo)
 
-2D scene+actor framework, see [test.py](https://github.com/takeiteasy/PySpriteKit/blob/master/test.py) for working example.
-
-```python
-import spritekit as sk
-
-@sk.main
-class TestScene(sk.Scene):
-    def enter(self):
-        self.camera.position = (320, 240)
-        self.camera.rotation = 45
-        self.camera.zoom = .5
-
-        self.add(sk.SpriteActor(position=(0, 0),
-                                texture="pear"))
-        self.add(sk.LineActor(position=(0, 0),
-                              end=(-100, -100),
-                              color=(1., 0., 0., 1.),
-                              thickness=10))
-        self.add(sk.RectActor(position=(0, 0),
-                              size=(100, 100),
-                              color=(0., 1., 0., 1.)))
-        self.add(sk.CircleActor(position=(0, 0),
-                                radius=100,
-                                color=(0., 0., 1., 1.)))
-        self.add(sk.EllipseActor(position=(0, 0),
-                                 width=200,
-                                 height=50,
-                                 color=(0., 1., 1., 1.)))
-        self.add(sk.PolygonActor(points=((0, 0), (100, 0), (50, 100)),
-                                 color=(1., 0., 1., 1.)))
-        self.add(sk.LabelActor(text="Hello, world!\nGoodbye, world!",
-                               font="ComicMono",
-                               font_size=72,
-                               align="center",
-                               color=(1., 0., 0., 1.)))
-```
-
 > [!NOTE]
 > `pip install spritekit==0.2.1`
+
+2D scene+actor framework based off Apple's SpriteKit. See [test.py](https://github.com/takeiteasy/PySpriteKit/blob/master/test.py) for working example.
 
 ## Features
 
@@ -66,9 +31,21 @@ class TestScene(sk.Scene):
 - [ ] 2D Physics
 - [ ] Bezier curves
 - [ ] Video + GIFs
-- [ ] Headless
+- [ ] Headless mode
 - [ ] Add examples
 - [ ] Add documentation
+
+## Requirements
+
+```
+transitions==0.9.2
+pyglm==2.8.1
+raudio==0.0.1
+moderngl==5.12.0
+numpy==2.2.4
+pillow==11.1.0
+pyglsl==0.0.8
+```
 
 ## LICENSE
 
