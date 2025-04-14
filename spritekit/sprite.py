@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .actor import Actor
-from .renderer import load_texture
+from .cache import load_texture
 from .shapes import Rect
 
 import glm

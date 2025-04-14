@@ -13,7 +13,6 @@
 - [X] ~~Sprites + Spritesheets~~
 - [X] ~~Audio nodes~~
 - [X] ~~Fonts + Label node~~
-- [ ] TileMap Node
 - [ ] Finate state machine
 - [ ] Scene Director class
 - [ ] Framebuffer + Shader classes

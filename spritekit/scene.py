@@ -19,19 +19,20 @@ from typing import Optional
 
 from .actor import Parent
 from .renderer import get_viewport, get_clear_color, set_viewport, set_clear_color 
-
-import quickwindow
+from .drawable import _convert_color
+from .window import window_size
 
 class Scene(Parent):
-    config: dict = {}
+    background_color = (0., 0., 0., 1.)
+    window_size = (640, 480)
+    window_title = "SpriteKit"
+    window_hints = None
+    frame_limit = None
 
-    def __init__(self,
-                 viewport: Optional[tuple[int, int]] = None,
-                 clear_color: tuple[float, float, float, float] = (0, 0, 0, 1),
-                 **kwargs):
-        Parent.__init__(self)
-        self.viewport = viewport if viewport is not None else quickwindow.size()
-        self.clear_color = clear_color
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.viewport = window_size()
+        self.clear_color = self.__class__.background_color
     
     @property
     def viewport(self):
@@ -46,8 +47,8 @@ class Scene(Parent):
         return get_clear_color()
     
     @clear_color.setter
-    def clear_color(self, value: tuple[float, float, float, float]):
-        set_clear_color(value)
+    def clear_color(self, value: tuple | list):
+        set_clear_color(_convert_color(value))
     
     def enter(self):
         pass
@@ -55,7 +56,7 @@ class Scene(Parent):
     def exit(self):
         pass
 
-    def event(self, event):
+    def event(self, _):
         pass
 
     def step(self, delta):

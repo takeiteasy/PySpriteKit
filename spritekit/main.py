@@ -16,9 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .scene import Scene
-from .renderer import init_renderer, flush
-
-import quickwindow
+from .renderer import _init_renderer, flush
+from .window import _init_window, window_handle
 
 __scene__ = []
 __next_scene = None
@@ -28,44 +27,45 @@ def main(cls):
     global __scene__, __drop_scene, __next_scene
     if __scene__:
         raise RuntimeError("@main already called")
-    with quickwindow.quick_window(**cls.config) as wnd:
-        init_renderer()
-        scn = cls()
-        __scene__.append(scn)
-        scn.enter()
-        
-        for dt, events in wnd.loop():
-            if not __scene__:
-                break
-            for event in events:
-                scn.event(event)
-            scn.step(dt)
-            scn.draw()
-            flush()
+    _init_window(*cls.window_size, cls.window_title, hints=cls.window_hints, frame_limit=cls.frame_limit)
+    _init_renderer()
+    scn = cls()
+    __scene__.append(scn)
+    scn.enter()
+    window = window_handle()
 
-            if __drop_scene:
-                if isinstance(__drop_scene, list):
-                    for _scn in reversed(__drop_scene):
-                        _scn.exit()
-                elif isinstance(__drop_scene, Scene):
-                    __drop_scene.exit()
-                else:
-                    raise RuntimeError("Invalid Scene")
-                __scene__ = __scene__[:-len(__drop_scene)]
+    while not window.should_close:
+        if not __scene__:
+            window.quit()
+        window.poll_events()
+        scn.step(window.delta_time)
+        scn.draw()
+        flush()
+        window.swap_buffers()
+
+        if __drop_scene:
+            if isinstance(__drop_scene, list):
+                for _scn in reversed(__drop_scene):
+                    _scn.exit()
+            elif isinstance(__drop_scene, Scene):
+                __drop_scene.exit()
+            else:
+                raise RuntimeError("Invalid Scene")
+            __scene__ = __scene__[:-len(__drop_scene)]
+            if __scene__:
+                scn = __scene__[-1]
+                scn.restored()
+            __drop_scene = None
+        if __next_scene:
+            if isinstance(__next_scene, Scene):
                 if __scene__:
-                    scn = __scene__[-1]
-                    scn.restored()
-                __drop_scene = None
-            if __next_scene:
-                if isinstance(__next_scene, Scene):
-                    if __scene__:
-                        __scene__[-1].background()
-                    __scene__.append(__next_scene)
-                    scn = __next_scene
-                    scn.enter()
-                    __next_scene = None
-                else:
-                    raise RuntimeError("Invalid Scene")
+                    __scene__[-1].background()
+                __scene__.append(__next_scene)
+                scn = __next_scene
+                scn.enter()
+                __next_scene = None
+            else:
+                raise RuntimeError("Invalid Scene")
     return cls
 
 __all__ = ['main']

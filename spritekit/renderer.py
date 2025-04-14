@@ -19,14 +19,13 @@ import math
 import platform
 from typing import Optional
 
+from .window import window_size
+from .shader import default_vertex, default_fragment
+
 import moderngl
-import quickwindow
 import glm
 from pyglsl import VertexStage, FragmentStage
 import numpy as np
-
-from spritekit.shader import *
-from spritekit.cache import *
 
 def line_vertices(x1, y1, x2, y2, color=(1, 1, 1, 1), thickness=1.):
     v1 = glm.vec2(x1, y1)
@@ -214,7 +213,7 @@ class Renderer:
         self._ctx = moderngl.get_context()
         self._program = self._ctx.program(vertex_shader=VertexStage(default_vertex).compile(),
                                           fragment_shader=FragmentStage(default_fragment).compile())
-        self.size = quickwindow.size() if viewport is None else viewport
+        self.size = window_size() if viewport is None else viewport
         self._view = None
         self._dirty = False
         self._update_view()
@@ -279,8 +278,8 @@ def _check_renderer(func):
         return func(*args, **kwargs)
     return wrapper
 
-def init_renderer(viewport: Optional[tuple[int | float, int | float]] = None,
-                  clear_color: tuple[float, float, float, float] = (0, 0, 0, 1)):
+def _init_renderer(viewport: Optional[tuple[int | float, int | float]] = None,
+                   clear_color: tuple[float, float, float, float] = (0, 0, 0, 1)):
     global __renderer__
     assert __renderer__ is None, "Renderer already initialized"
     __renderer__ = Renderer(viewport, clear_color)

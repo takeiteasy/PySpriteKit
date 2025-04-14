@@ -30,3 +30,4 @@ from .shader import *
 from .shapes import *
 from .sprite import *
 from .timer import *
+from .window import *

@@ -29,20 +29,22 @@ from PIL import ImageFont, ImageDraw, Image
 from typing import Optional
 
 def _system_font_paths():
-    font_paths = []
+    def _clean(paths):
+        return [path for path in paths if os.path.isdir(path)]
     match platform.system():
         case "Windows":
-            font_paths.append(os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts"))
+            return _clean([os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts")])
         case "Darwin":
-            font_paths.extend(["/Library/Fonts",
-                               "/System/Library/Fonts",
-                               os.path.expanduser("~/Library/Fonts")])
+            return _clean(["/Library/Fonts",
+                           "/System/Library/Fonts",
+                           os.path.expanduser("~/Library/Fonts")])
+        case "Linux":
+            return _clean(["/usr/share/fonts",
+                           "/usr/local/share/fonts",
+                           os.path.expanduser("~/.fonts"),
+                           os.path.expanduser("~/.local/share/fonts")])
         case _:
-            font_paths.extend(["/usr/share/fonts",
-                               "/usr/local/share/fonts",
-                               os.path.expanduser("~/.fonts"),
-                               os.path.expanduser("~/.local/share/fonts")])
-    return [path for path in font_paths if os.path.isdir(path)]
+            return []
 
 __pil_fonts__ = [".pil", ".pbm"]
 __other_fonts__ = [".ttf", ".ttc", ".otf", ".pfa", ".pfb", ".cff", ".fnt", ".fon", ".bdf", ".pcf", ".woff", ".woff2", ".dfont"]
