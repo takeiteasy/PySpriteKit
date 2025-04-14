@@ -17,6 +17,7 @@
 
 import os
 from functools import reduce
+import platform
 
 from .actor import Actor
 from .cache import _find_file
@@ -27,10 +28,26 @@ import moderngl
 from PIL import ImageFont, ImageDraw, Image
 from typing import Optional
 
+def _system_font_paths():
+    font_paths = []
+    match platform.system():
+        case "Windows":
+            font_paths.append(os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts"))
+        case "Darwin":
+            font_paths.extend(["/Library/Fonts",
+                               "/System/Library/Fonts",
+                               os.path.expanduser("~/Library/Fonts")])
+        case _:
+            font_paths.extend(["/usr/share/fonts",
+                               "/usr/local/share/fonts",
+                               os.path.expanduser("~/.fonts"),
+                               os.path.expanduser("~/.local/share/fonts")])
+    return [path for path in font_paths if os.path.isdir(path)]
+
 __pil_fonts__ = [".pil", ".pbm"]
 __other_fonts__ = [".ttf", ".ttc", ".otf", ".pfa", ".pfb", ".cff", ".fnt", ".fon", ".bdf", ".pcf", ".woff", ".woff2", ".dfont"]
 __font_extensions__ = __pil_fonts__ + __other_fonts__
-__font_folders__ = ("fonts",)
+__font_folders__ = ("fonts", *_system_font_paths())
 
 def _convert_color(color: tuple | list):
     assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 values"

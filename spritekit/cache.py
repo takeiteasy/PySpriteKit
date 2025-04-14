@@ -47,13 +47,9 @@ def _find_file(file_path, folder_names, extensions):
         else:
             paths.extend(_generate_paths(file_path, folder, ""))
     found = list(set([os.path.abspath(p) for p in paths if os.path.isfile(p)]))
-    match len(found):
-        case 0:
-            raise RuntimeError(f"File '{file_path}' not found")
-        case 1:
-            return found[0]
-        case _:
-            raise RuntimeError(f"File '{file_path}' has multiple matches: {', '.join(found)}")
+    if not found:
+        raise RuntimeError(f"File '{file_path}' not found")
+    return found[0]
 
 def _check_cache(type_name, path):
     if not type_name in __cache__:
