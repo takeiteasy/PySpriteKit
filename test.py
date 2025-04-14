@@ -1,86 +1,12 @@
-import spritekit as sk
-from typing import override
+import spritekit
 
-@sk.main_scene
-class TestScene(sk.Scene):
-    config = {
-        "width": 800,
-        "height": 600,
-        "title": "Test",
-        "exit_key": sk.Keys.escape,
-        "flags": sk.Flags.window_resizable,
-        "fps": 60
-    }
-
-    def add_stuff(self):
-        self.add_child(sk.RectangleNode(name="test",
-                                        width=100,
-                                        height=100,
-                                        color=sk.Color(1., 0, 0)))
-        self.add_child(sk.CircleNode(name="test",
-                                     position=sk.Vector2([100, 100]),
-                                     radius=100,
-                                     color=sk.Color(0, 1., 0)))
-        self.add_child(sk.TriangleNode(name="test",
-                                       position2=sk.Vector2([100, 200]),
-                                       position3=sk.Vector2([200, 100]),
-                                       color=sk.Color(0, 0, 1.)))
-        self.add_child(sk.SpriteNode(name="test",
-                                     texture=sk.Texture(f"assets/textures/LA.png"),
-                                     origin=sk.Vector2([1., 1.]),
-                                     scale=sk.Vector2([0.5, 0.5])))
-
-    def add_circle(self):
-        return sk.CircleNode(name="test",
-                             radius=50,
-                             color=sk.Color(1., 0, 1.))
-        
-    @override
+@spritekit.main
+class TestScene(spritekit.Scene):
     def enter(self):
-        self.add_child(sk.LabelNode(name="tset",
-                                    text="Hello, World!",
-                                    font_size=24,
-                                    color=sk.Color(1., 0., 1.)))
-        self.add_child(sk.MusicNode(name="bg",
-                                    music=sk.Music(f"assets/audio/country.mp3"),
-                                    auto_start=True))
-        self.add_child(sk.EmitterNode(emit=self.add_circle,
-                                      duration=1.))
-        self.add_child(sk.RectangleNode(name="poo",
-                                        width=50,
-                                        height=50,
-                                        color=sk.Color(.5, .5, 0)))
-        self.add_child(sk.ActionSequence([sk.WaitAction(duration=1.),
-                                          sk.ActionNode(target=250.,
-                                                        easing_fn=sk.ease_bounce_in_out,
-                                                        field="position.y",
-                                                        actor=self.find_child("poo")),
-                                          sk.WaitAction(duration=1.),
-                                          sk.ActionNode(target=0.,
-                                                        easing_fn=sk.ease_bounce_in_out,
-                                                        field="position.y",
-                                                        actor=self.find_child("poo"))],
-                                         repeat=True))
-        self.add_child(sk.EmitterNode(emit=(sk.CircleNode,
-                                            {'name': 'test',
-                                             'radius': 25,
-                                             'color': sk.Color(1., 1., 0.)}),
-                                      duration=.5))
-        self.add_stuff()
-
-    @override
-    def step(self, delta):
-        if sk.Keyboard.key_pressed("r"):
-            if self.find_children("test"):
-                self.remove_children("test")
-            else:
-                self.add_stuff()
-        if sk.Keyboard.key_pressed("space"):
-            for child in self.find_children("bg"):
-                child.toggle()
-        
-        for child in self.children("test"):
-            child.position.x += 100 * delta
-        for child in self.children("tset"):
-            child.rotation += 100 * delta
-        super().step(delta)
+        self.add(spritekit.Sprite(position=(0, 0), texture="pear"))
+        self.add(spritekit.Line(position=(0, 0), end=(-100, -100), color=(1., 0., 0., 1.), thickness=10))
+        self.add(spritekit.Rect(position=(0, 0), size=(100, 100), color=(0., 1., 0., 1.)))
+        self.add(spritekit.Circle(position=(0, 0), diameter=100, color=(0., 0., 1., 1.)))
+        self.add(spritekit.Ellipse(position=(0, 0), width=200, height=50, color=(0., 1., 1., 1.)))
+        self.add(spritekit.Polygon(position=(0, 0), points=((0, 0), (100, 0), (50, 100)), color=(1., 0., 1., 1.)))
+        self.add(spritekit.Label(text="Hello, world!", font="ComicMono", font_size=72, color=(1., 0., 0., 1.)))
