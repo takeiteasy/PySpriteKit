@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Optional
-
 from .actor import Parent
 from .renderer import get_viewport, get_clear_color, set_viewport, set_clear_color 
 from .drawable import _convert_color

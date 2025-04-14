@@ -911,5 +911,5 @@ __all__ = ["KeyEvent", "CharEvent", "ScrollEvent", "MouseButtonEvent",
            "CursorEnterEvent", "CursorPosEvent", "WindowSizeEvent", "WindowPosEvent",
            "WindowCloseEvent", "WindowRefreshEvent", "WindowFocusEvent",
            "WindowIconifyEvent", "FrameBufferSizeEvent", "Hints", "Keys", "Mice",
-           "Joystick", "Monitor", "VideoMode", "Window", "window_handle",
+           "Joystick", "Monitor", "VideoMode", "window_handle",
            "window_should_close", "window_width", "window_height", "window_size"]
