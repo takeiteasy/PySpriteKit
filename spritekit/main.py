@@ -18,32 +18,38 @@
 from . import _renderer as renderer
 from .window import _init_window, get_window
 
-__scene__ = []
+__scene__ = None
+__next_scene__ = None
+
+def _load_scene(cls):
+    global __scene__
+    if __scene__ is not None:
+        __scene__.exit()
+    __scene__ = cls()
+    __scene__.enter()
+
+def load_scene(cls):
+    global __next_scene__
+    __next_scene__ = cls
 
 def main(cls):
-    global __scene__
-    if __scene__:
-        raise RuntimeError("@main already called")
     _init_window(*cls.window_size, cls.window_title, hints=cls.window_hints, frame_limit=cls.frame_limit)
     renderer.init()
-    scn = cls()
-    __scene__.append(scn)
-    scn.enter()
+    load_scene(cls)
     window = get_window()
-
     while not window.should_close:
-        if not __scene__:
-            window.quit()
         window.poll_events()
-        scn.step(window.delta_time)
-        scn.draw()
+        __scene__.step(window.delta_time)
+        __scene__.draw()
         renderer.flush()
         window.swap_buffers()
-
+        if __next_scene__ is not None:
+            _load_scene(__next_scene__)
+            __next_scene__ = None
     return cls
 
 def quit():
     window = get_window()
     window.should_close = True
 
-__all__ = ['main', 'quit']
+__all__ = ['main', 'quit', 'load_scene']

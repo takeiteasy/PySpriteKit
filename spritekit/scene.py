@@ -20,7 +20,6 @@ from . import _renderer as renderer
 from . import _drawable as drawable
 from .state import FiniteStateMachine
 from .window import window_size
-from .main import quit
 
 class Scene(ActorParent, FiniteStateMachine):
     background_color = (0., 0., 0., 1.)
@@ -65,33 +64,4 @@ class Scene(ActorParent, FiniteStateMachine):
         for child in reversed(self.children):
             child.draw()
 
-class Director(Scene):
-    def __init__(self, initial_scene: Scene, **kwargs):
-        super().__init__(**kwargs)
-        self._next_scene = None
-        self._scene = initial_scene
-        self._scene.enter()
-    
-    @property
-    def scene(self):
-        return self._scene
-    
-    @scene.setter
-    def scene(self, value: Scene):
-        self._next_scene = value
-    
-    def step(self, delta):
-        if not self._scene:
-            quit()
-        if self._next_scene:
-            if self._scene:
-                self._scene.exit()
-            self._scene = self._next_scene
-            self._scene.enter()
-            self._next_scene = None
-        self._scene.step(delta)
-
-    def draw(self):
-        self._scene.draw()
-
-__all__ = ["Scene", "Director"]
+__all__ = ["Scene"]
