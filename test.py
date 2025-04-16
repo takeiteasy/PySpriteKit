@@ -7,8 +7,12 @@ class TestScene(sk.Scene):
         self.camera.rotation = 45
         self.camera.zoom = .5
 
+        test = sk.Texture.linear_gradient(500, 500,
+                                          color_1=(1., 0., 0., 1.),
+                                          color_2=(0., 0., 1., 1.))
+
         self.add(sk.SpriteActor(position=(0, 0),
-                                texture="pear"))
+                                texture=test))
         self.add(sk.LineActor(position=(0, 0),
                               end=(-100, -100),
                               color=(1., 0., 0., 1.),

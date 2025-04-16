@@ -19,7 +19,9 @@ import math
 
 from .actor import Actor
 from . import _renderer as renderer
+from .texture import Texture
 
+import moderngl
 import glm
 
 def convert_color(color: tuple | list):
@@ -105,6 +107,12 @@ class Drawable(Actor):
             else:
                 self._vertices = self._generate_vertices()
             self._dirty = False
-        renderer.draw(self._vertices, None if self._wireframe else self._texture)
+        match self._texture:
+            case None:
+                renderer.draw(self._vertices, None if self._wireframe else self._texture)
+            case moderngl.Texture():
+                renderer.draw(self._vertices, self._texture)
+            case Texture():
+                renderer.draw(self._vertices, self._texture.raw)
         super().draw()
 

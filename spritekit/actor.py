@@ -42,15 +42,15 @@ class ActorParent:
     def _remove_child(self, child: str | ActorType):
         matching = []
         not_matching = []
-        for child in self.children:
-            match = child.name == child if isinstance(child, str) else child == child
+        for _child in self.children:
+            match = _child.name == child if isinstance(child, str) else _child == child
             if match:
-                matching.append(child)
+                matching.append(_child)
             else:
-                not_matching.append(child)
-        for child in matching:
-            if hasattr(child, 'on_removed') and callable(child.on_removed):
-                child.on_removed()
+                not_matching.append(_child)
+        for _child in matching:
+            if hasattr(_child, 'on_removed') and callable(_child.on_removed):
+                _child.on_removed()
         self.children = not_matching
 
     def remove(self, child: list[ActorType] | ActorType | str):

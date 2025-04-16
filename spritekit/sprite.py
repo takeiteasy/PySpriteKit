@@ -19,18 +19,28 @@ from typing import Optional
 
 from .cache import load_texture
 from .shapes import RectActor
+from .texture import Texture
 
 import glm
 import moderngl
+from PIL import Image
 
 class SpriteActor(RectActor):
     def __init__(self,
                  position: glm.vec2 | list | tuple,
-                 texture: str | moderngl.Texture,
+                 texture: str | Image.Image | moderngl.Texture | Texture,
                  size: Optional[glm.vec2 | list | tuple] = None,
                  clip: Optional[tuple | list] = None,
                  **kwargs):
-        tmp = texture if isinstance(texture, moderngl.Texture) else load_texture(texture)
+        match texture:
+            case str():
+                tmp = load_texture(texture)
+            case Image.Image():
+                tmp = Texture(texture)
+            case moderngl.Texture() | Texture():
+                tmp = texture
+            case _:
+                raise ValueError("Invalid texture type")
         size = size if size is not None else tmp.size
         super().__init__(position=position,
                          size=size,
