@@ -41,7 +41,7 @@ class LabelActor(RectActor):
         self._is_truetype = False
         self._load_font(font, font_size)
         self._text = text
-        self._size = tuple(self._calculate_full_size2(text.split("\n")))
+        self.size = tuple(self._calculate_full_size2(text.split("\n")))
         self._background_color = _convert_color(background) if background is not None else (0, 0, 0, 0)
         self._texture = None
         self._align = align

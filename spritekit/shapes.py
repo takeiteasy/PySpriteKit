@@ -87,7 +87,7 @@ class RectActor(drawable.Drawable):
                  **kwargs):
         super().__init__(**kwargs)
         assert len(size) == 2, "Size must be a 2D vector"
-        self._size = glm.vec2(*size)
+        self.size = size
     
     @property
     def size(self):

@@ -8,8 +8,8 @@ class TestScene(sk.Scene):
         self.camera.zoom = 2
 
         test = sk.Texture.checkered(500, 500, 50)
-        ass = sk.SpriteSheetActor(json_path="assets/textures/Sprite-0001.json",
-                                  position=(0, 0))
+        ass = sk.SpriteActor(texture="assets/textures/Sprite-0001.json",
+                             position=(0, 0))
 
         self.add(sk.SpriteActor(position=(0, 0),
                                 texture=test))
