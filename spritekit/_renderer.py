@@ -22,8 +22,7 @@ from .window import window_size
 from .shader import default_shader
 
 import moderngl
-import glm
-from pyglsl import VertexStage, FragmentStage
+from pyglm import glm
 import numpy as np
 
 class Batch:
@@ -46,6 +45,10 @@ class Batch:
     @property
     def has_texture(self):
         return self._texture is not None
+
+    @property
+    def texture(self):
+        return self._texture
     
     def flush(self):
         if not self._vertices:
@@ -83,7 +86,7 @@ class Renderer:
     
     def _update_view(self):
         halfw, halfh = self._size[0] / 2, self._size[1] / 2
-        self._view = glm.ortho(-halfw, halfw, -halfh, halfh, -1., 1.)
+        self._view = glm.ortho(-halfw, halfw, -halfh, halfh)
         self._dirty = False
     
     @property
@@ -120,7 +123,7 @@ class Renderer:
         self._world = value
     
     def draw(self, vertices, texture=None):
-        if self._current_batch is None or self._current_batch._texture != texture:
+        if self._current_batch is None or self._current_batch.texture != texture:
             if self._current_batch is not None:
                 self._batches.append(self._current_batch)
             self._current_batch = Batch(self._program, self._view, self._world, texture)
@@ -131,13 +134,14 @@ class Renderer:
             self._batches.append(self._current_batch)
         if self._dirty:
             self._update_view()
-        self._ctx.clear(viewport=self._size, color=self._clear_color)
+        # noinspection PyTypeChecker
+        self._ctx.clear(viewport=self.size, color=self.clear_color)
         for batch in self._batches:
             batch.flush()
         self._batches = []
         self._current_batch = None
 
-__renderer__ = None
+__renderer__: Optional[Renderer] = None
 
 def _check_renderer(func):
     def wrapper(*args, **kwargs):

@@ -19,7 +19,7 @@ import math
 
 from . import _drawable as drawable
 
-import glm
+from pyglm import glm
 
 def _line_vertices(x1, y1, x2, y2, color=(1, 1, 1, 1), thickness=1.):
     v1 = glm.vec2(x1, y1)
@@ -49,51 +49,12 @@ def _normalise_texcoords(clip):
             (nx + cw) / 1.,
             1.0 - ny / 1.)
 
-def _rect_points(x, y, w, h, rotation=0., scale=1.):
-    hw = w / 2
-    hh = h / 2
-    x1 = (x - hw) * scale
-    x2 = (x + hw) * scale
-    y1 = (y - hh) * scale
-    y2 = (y + hh) * scale
-    c = math.cos(rotation)
-    s = math.sin(rotation)
-    p1 = _rotate_point(x1, y1, c, s)
-    p2 = _rotate_point(x2, y1, c, s)
-    p3 = _rotate_point(x1, y2, c, s)
-    p4 = _rotate_point(x2, y2, c, s)
-    return p1, p2, p3, p4
-
-def _ellipse_points(x, y, width, height, rotation=0., scale=1., segments=32):
-    step = 2 * math.pi / segments
-    rx = width / 2. * scale
-    ry = height / 2. * scale
-    c = math.cos(rotation)
-    s = math.sin(rotation)
-    p = glm.vec2(x, y)
-    return [p + _rotate_point(rx * math.cos(i * step), ry * math.sin(i * step), c, s) for i in range(segments)]
-
-def _polygon_centroid(points):
-    assert len(points) > 0
-    area = 0.
-    centroid = glm.vec2(0., 0.)
-    n = len(points)
-    for i in range(n):
-        x1, y1 = points[i]
-        x2, y2 = points[(i + 1) % n]
-        p = (x1 * y2) - (x2 * y1)
-        area += p
-        centroid += glm.vec2((x1 + x2) * p, (y1 + y2) * p)
-    return points[0] if n == 1 else sum(points) / n if area / 2. == 0. else centroid / (6. * area)
-
 class LineActor(drawable.Drawable):
     def __init__(self,
                  end: glm.vec2 | list[float] | tuple[float, float] = (0., 0.),
-                 thickness: float = 1.,
                  **kwargs):
         super().__init__(**kwargs)
         self._end = end
-        self._thickness = thickness
 
     @property
     def end(self):
@@ -137,9 +98,25 @@ class RectActor(drawable.Drawable):
         assert len(value) == 2, "Size must be a 2D vector"
         self._size = glm.vec2(*value)
         self._dirty = True
+
+    @property
+    def points(self):
+        hw = self._size.x / 2
+        hh = self._size.y / 2
+        x1 = (self._position.x - hw) * self._scale
+        x2 = (self._position.x + hw) * self._scale
+        y1 = (self._position.y - hh) * self._scale
+        y2 = (self._position.y + hh) * self._scale
+        c = math.cos(self._rotation)
+        s = math.sin(self._rotation)
+        p1 = _rotate_point(x1, y1, c, s)
+        p2 = _rotate_point(x2, y1, c, s)
+        p3 = _rotate_point(x1, y2, c, s)
+        p4 = _rotate_point(x2, y2, c, s)
+        return p1, p2, p3, p4
     
     def _generate_vertices(self):
-        p1, p2, p3, p4 = _rect_points(*self._position, *self._size, self._rotation, self._scale)
+        p1, p2, p3, p4 = self.points
         tc = _normalise_texcoords((0, 0, 1, 1))
         return [*p1, tc[0], tc[1], *self._color,
                 *p2, tc[2], tc[1], *self._color,
@@ -149,7 +126,7 @@ class RectActor(drawable.Drawable):
                 *p2, tc[2], tc[1], *self._color]
     
     def _generate_outline_vertices(self):
-        p1, p2, p3, p4 = _rect_points(*self._position, *self._size, self._rotation, self._scale)
+        p1, p2, p3, p4 = self.points
         return [*_line_vertices(*p1, *p2, *self._color, self._thickness),
                 *_line_vertices(*p3, *p4, *self._color, self._thickness),
                 *_line_vertices(*p1, *p3, *self._color, self._thickness),
@@ -194,10 +171,20 @@ class EllipseActor(drawable.Drawable):
         assert value >= 3, "Segments must be at least 3"
         self._segments = value
         self._dirty = True
-    
+
+    @property
+    def points(self):
+        step = 2 * math.pi / self._segments
+        rx = self._width / 2. * self._scale
+        ry = self._height / 2. * self._scale
+        c = math.cos(self._rotation)
+        s = math.sin(self._rotation)
+        p = glm.vec2(self._position.x, self._position.y)
+        return [p + _rotate_point(rx * math.cos(i * step), ry * math.sin(i * step), c, s) for i in range(self._segments)]
+
     def _generate_vertices(self):
         centre = [*self._position, 0., 0., *self._color]
-        points = _ellipse_points(*self._position, self._width, self._height, self._rotation, self._scale, self._segments)
+        points = self.points
         vertices = []
         for i in range(len(points)):
             vertices.extend([*centre,
@@ -206,7 +193,7 @@ class EllipseActor(drawable.Drawable):
         return vertices
 
     def _generate_outline_vertices(self):
-        points = _ellipse_points(*self._position, self._width, self._height, self._rotation, self._scale, self._segments)
+        points = self.points
         vertices = []
         for i in range(len(points)):
             vertices.extend(*_line_vertices(*points[i], *(points[(i + 1) % len(points)]), *self._color, self._thickness))
@@ -256,16 +243,17 @@ class PolygonActor(drawable.Drawable):
                  **kwargs):
         super().__init__(**kwargs)
         self._sort = sort
+        self._points = []
         self._set_points(points)
         assert len(self._points) == len(points), "All points must be 2D vectors"
         if sort:
-            self.sort()
+            self._sort_points()
     
     def _set_points(self, points: list | tuple):
         self._points = [glm.vec2(*p) - self._position * self._scale for p in points if len(p) == 2]
         self._dirty = True
-    
-    def sort(self):
+
+    def _sort_points(self):
         self._points = sorted(self._points, key=lambda p: math.atan2(p.y, p.x))
         self._dirty = True
 
@@ -278,22 +266,35 @@ class PolygonActor(drawable.Drawable):
         assert len(value) >= 3, "Polygon must have at least 3 points"
         self._set_points(value)
         if self._sort:
-            self.sort()
+            self._sort_points()
     
     def add_point(self, points: list | tuple):
         for p in points:
             assert len(p) == 2, "Point must be a 2D vector"
             self._points.extend(glm.vec2(*p))
         if self._sort:
-            self.sort()
+            self._sort_points()
         self._dirty = True
-    
+
+    @property
+    def centroid(self):
+        area = 0.
+        centroid = glm.vec2(0., 0.)
+        n = len(self._points)
+        for i in range(n):
+            x1, y1 = self._points[i]
+            x2, y2 = self._points[(i + 1) % n]
+            p = (x1 * y2) - (x2 * y1)
+            area += p
+            centroid += glm.vec2((x1 + x2) * p, (y1 + y2) * p)
+        return self._points[0] if n == 1 else sum(self._points) / n if area / 2. == 0. else centroid / (6. * area)
+
     def _generate_vertices(self):
         c = math.cos(self._rotation)
         s = math.sin(self._rotation)
         t = [glm.vec2(*p) for p in self._points]
         f = [glm.vec2(*_rotate_point(*p, c, s)) + p for p in t]
-        centroid_vertex = [*_polygon_centroid(f), 0, 0, *self._color]
+        centroid_vertex = [*self.centroid, 0, 0, *self._color]
         vertices = []
         for i in range(len(f)):
             vertices.extend([*centroid_vertex,

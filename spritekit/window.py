@@ -112,7 +112,9 @@ class FrameBufferSizeEvent(EventType):
 
 
 if bytes is str:
+    # noinspection PyUnresolvedReferences
     _unichr = unichr
+    # noinspection PyUnresolvedReferences
     _unistr = unicode
 else:
     _unichr = chr
@@ -312,6 +314,7 @@ def _keyattrs_():
             _keyattribs_[_name_] = item
             if _prop_ == 'last' or _prop_ == 'unknown':
                 continue
+            # noinspection PyUnresolvedReferences
             _keyattribs_[_prop_] = property(lambda self, item=item: self[item])
 
     return _keyattribs_
@@ -849,7 +852,7 @@ class Window(WindowType):
 
 __window__ = None
 
-def _init_window(width: int = 640,
+def init_window(width: int = 640,
                  height: int = 480,
                  title: str = "PySpriteKit",
                  versions: Optional[tuple[int, int, bool]] = None,
@@ -912,5 +915,5 @@ __all__ = ["KeyEvent", "CharEvent", "ScrollEvent", "MouseButtonEvent",
            "CursorEnterEvent", "CursorPosEvent", "WindowSizeEvent", "WindowPosEvent",
            "WindowCloseEvent", "WindowRefreshEvent", "WindowFocusEvent",
            "WindowIconifyEvent", "FrameBufferSizeEvent", "Hints", "Keys", "Mice",
-           "Joystick", "Monitor", "VideoMode", "get_window",
+           "Joystick", "Monitor", "VideoMode", "get_window", "init_window",
            "window_should_close", "window_width", "window_height", "window_size"]

@@ -129,7 +129,7 @@ class SoundActor(BaseAudio):
                 self._times -= 1
                 self._restart()
             else:
-                self.remove()
+                self.remove_me()
 
 class MusicActor(BaseAudio):    
     def __init__(self,
@@ -178,6 +178,6 @@ class MusicActor(BaseAudio):
                     self._sound.play()
                 else:
                     if self._remove_on_complete:
-                        self.remove()
+                        self.remove_me()
 
 __all__ = ["SoundActor", "MusicActor"]

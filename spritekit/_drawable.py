@@ -22,7 +22,7 @@ from . import _renderer as renderer
 from .texture import Texture
 
 import moderngl
-import glm
+from pyglm import glm
 
 def convert_color(color: tuple | list):
     assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 values"
@@ -36,6 +36,7 @@ class Drawable(Actor):
                  scale: float = 1.,
                  color: list | tuple = (1., 1., 1., 1.),
                  wireframe: bool = False,
+                 thickness: float = 1.,
                  **kwargs):
         self._dirty = True
         self._vertices = []
@@ -48,6 +49,7 @@ class Drawable(Actor):
         self._scale = scale
         self._color = convert_color(color)
         self._wireframe = wireframe
+        self._thickness = thickness
 
     @property
     def position(self):
@@ -100,19 +102,28 @@ class Drawable(Actor):
     def _generate_outline_vertices(self):
         return [*self._position, 0., 0., *self._color]
 
-    def draw(self):
+    @property
+    def vertices(self):
         if self._dirty:
             if self._wireframe:
                 self._vertices = self._generate_outline_vertices()
             else:
                 self._vertices = self._generate_vertices()
             self._dirty = False
+        return self._vertices
+
+    @property
+    def points(self):
+        return [self.position]
+
+    def draw(self):
+        vertices = self.vertices
         match self._texture:
             case None:
-                renderer.draw(self._vertices, None if self._wireframe else self._texture)
+                renderer.draw(vertices, None if self._wireframe else self._texture)
             case moderngl.Texture():
-                renderer.draw(self._vertices, self._texture)
+                renderer.draw(vertices, self._texture)
             case Texture():
-                renderer.draw(self._vertices, self._texture.raw)
+                renderer.draw(vertices, self._texture.raw)
         super().draw()
 

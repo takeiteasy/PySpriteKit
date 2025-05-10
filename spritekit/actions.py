@@ -29,7 +29,7 @@ class ActionType:
 
 @dataclass
 class ActionActor(ActionType, TimerActor):
-    easing: Callable[[float, float, float, float], float] = staticmethod(ease_linear_in_out)
+    easing: Callable[[float, float, float, float], float] = ease_linear_in_out
     actor: Optional[Actor] = None
     field: Optional[str | list[str]] = None
     target: Any = None
@@ -38,7 +38,7 @@ class ActionActor(ActionType, TimerActor):
     def _initial_value(self):
         obj = self.actor
         if self.field is None:
-            return None
+            return
         for i in range(len(self.field)):
             if i == len(self.field) - 1:
                 f = getattr(obj, self.field[i])
@@ -70,9 +70,9 @@ class ActionActor(ActionType, TimerActor):
         self.field = self.field if isinstance(self.field, list) else self.field.split(".") if "." in self.field else [self.field]
         self._initial_value()
         if "easing" in kwargs:
-            self.easing = staticmethod(kwargs.pop("easing"))
+            self.easing = kwargs.pop("easing")
         self._start = None
-        self.on_complete = self.remove
+        self.on_complete = self.remove_me
         self.on_tick = self._step
 
     @property
@@ -83,17 +83,17 @@ class ActionActor(ActionType, TimerActor):
     def running(self):
         return self._running
 
-    def _step(self, delta: float):
+    def _step(self, _):
         if not self._start:
             with self._initial_value() as start:
                 self._start = start
-        elapsed = self.duration - self.cursor
+        elapsed = self.duration - self.position
         delta = self.target - self._start
         obj = self.actor
         for i in range(len(self.field)):
             if i == len(self.field) - 1:
-                def fn(x, y, z, w):
-                    return self.easing(x, y, z, w)
+                def fn(x, y, _z, w):
+                    return self.easing(x, y, _z, w)
                 f = getattr(obj, self.field[i])
                 if isinstance(f, float) or isinstance(f, int):
                     v = type(f)(fn(elapsed, self._start, delta, self.duration))
@@ -119,7 +119,7 @@ class WaitAction(ActionType, TimerActor):
         self._completed = True
         if self._on_complete_usr:
             self._on_complete_usr()
-        self.remove()
+        self.remove_me()
 
 class ActionSequence(ActionType, TimerActor, Queue):
     def __init__(self, actions: list[ActionType], duration: float = 0., auto_start: bool = True, remove_on_complete: bool = True, repeat: bool = False):
@@ -146,7 +146,7 @@ class ActionSequence(ActionType, TimerActor, Queue):
             self.start()
         else:
             if self.remove_on_complete:
-                self.remove()
+                self.remove_me()
 
     @override
     def step(self, delta: float):
@@ -165,7 +165,7 @@ class ActionSequence(ActionType, TimerActor, Queue):
 
     @override
     def reset(self):
-        self._completed = False
+        self._completed = False # noqa
         self._head = None
         self.queue.clear()
         for action in self._actions:
@@ -177,8 +177,8 @@ class ActionSequence(ActionType, TimerActor, Queue):
             return
         if self.empty():
             raise RuntimeError("ActionSequence is empty")
-        self._running = True
-        self._completed = False
+        self._running = True # noqa
+        self._completed = False # noqa
         self._head = None
 
     @override

@@ -15,10 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from . import _renderer as renderer
-from .window import _init_window, get_window
+from typing import Optional
 
-__scene__ = None
+from . import _renderer as renderer
+from .window import init_window, get_window
+from .scene import Scene
+
+__scene__: Optional[Scene] = None
 __next_scene__ = None
 
 def _load_scene(cls):
@@ -34,7 +37,7 @@ def load_scene(cls):
 
 def main(cls):
     global __scene__, __next_scene__
-    _init_window(*cls.window_size, cls.window_title, hints=cls.window_hints, frame_limit=cls.frame_limit)
+    init_window(*cls.window_size, cls.window_title, hints=cls.window_hints, frame_limit=cls.frame_limit)
     renderer.init()
     _load_scene(cls)
     window = get_window()
@@ -49,8 +52,9 @@ def main(cls):
             __next_scene__ = None
     return cls
 
-def quit():
+# noinspection PyShadowingNames
+def quit_spritekit():
     window = get_window()
     window.should_close = True
 
-__all__ = ['main', 'quit', 'load_scene']
+__all__ = ['main', 'quit_spritekit', 'load_scene']

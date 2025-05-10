@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Callable, Type
-from copy import deepcopy
 
 from .actor import Actor
 from .timer import TimerActor
@@ -29,7 +28,7 @@ class EmitterActor(TimerActor):
         if callable(emit):
             self._emit = staticmethod(emit)
         elif isinstance(emit, Actor):
-            self._clone = deepcopy(emit)
+            self._copy = emit.clone()
             self._emit = staticmethod(self._clone)
         else:
             self._type = emit[0]
@@ -40,7 +39,7 @@ class EmitterActor(TimerActor):
             self._emit()
     
     def _clone(self):
-        return deepcopy(self._clone)
+        return self._copy.clone()
     
     def _create(self):
         return self._type(**self._args)

@@ -16,17 +16,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import reduce
+from typing import Optional
 
 from .cache import load_font
 from .shapes import RectActor
+from .texture import _convert_color
 
 import moderngl
 from PIL import ImageFont, ImageDraw, Image
-from typing import Optional
-
-def _convert_color(color: tuple | list):
-    assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 values"
-    return tuple(min(max(v if isinstance(v, int) else int(v * 255.), 0), 255) for v in (color if len(color) == 4 else (*color, 255)))
 
 class LabelActor(RectActor):
     def __init__(self,
@@ -146,15 +143,16 @@ class LabelActor(RectActor):
         image = Image.new("RGBA", (width, height), self._background_color)
         draw = ImageDraw.Draw(image)
         for y, line in enumerate(lines):
+            # noinspection PyUnreachableCode
             match self._align:
-                case "left":
-                    x = 0
                 case "right":
                     x = width - sizes[y][0]
                 case "center":
                     x = (width - sizes[y][0]) / 2
+                case _:
+                    x = 0
             draw.text((x, y * sizes[y][1]), line, font=self._font, fill=self._color)
-        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+        image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
         if self._texture is not None:
             del self._texture
         self._texture = moderngl.get_context().texture(image.size, 4, image.tobytes())

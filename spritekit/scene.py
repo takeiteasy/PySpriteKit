@@ -25,82 +25,17 @@ from .camera import Camera
 class SceneType:
     pass
 
-class SceneParent:
-    def __init__(self, scenes: list[SceneType] | SceneType = []):
-        self._scenes = scenes if isinstance(scenes, list) else [scenes]
-        for scene in self._scenes:
-            scene.parent = self
-            scene.enter()
-    
-    @property
-    def scenes(self):
-        return self._scenes
-    
-    @scenes.setter
-    def scenes(self, value: list[SceneType] | SceneType):
-        self._scenes = []
-        self.push_scene(value)
-    
-    def push_scene(self, scenes: SceneType | list[SceneType]):
-        if not isinstance(scenes, list):
-            scenes = [scenes]
-        for scene in scenes:
-            scene.parent = self
-            scene.enter()
-        self._scenes = scenes + self._scenes
-    
-    def pop_scene(self, n: int = 1):
-        result = [self._scenes.pop(0) for _ in range(n)]
-        for scene in result:
-            scene.exit()
-        return result[0] if n == 1 else result
-
-    def append_scene(self, scenes: SceneType | list[SceneType]):
-        if not isinstance(scenes, list):
-            scenes = [scenes]
-        for scene in scenes:
-            scene.parent = self
-            scene.enter()
-        self._scenes.extend(scenes)
-
-    def drop_scene(self, n: int = 1):
-        result = [self._scenes.pop() for _ in range(n)]
-        for scene in result:
-            scene.exit()
-        return result[0] if n == 1 else result
-    
-    def remove_scene(self, scene: SceneType):
-        scene.exit()
-        self._scenes.remove(scene)
-    
-    def clear_scenes(self):
-        self._scenes = []
-    
-    def set_scene(self, scene: SceneType):
-        scene.parent = self
-        self._scenes = [scene]
-    
-    def step(self, delta):
-        for scene in self._scenes:
-            scene.step(delta)
-    
-    def draw(self):
-        for scene in self._scenes:
-            scene.draw()
-
-class Scene(SceneType, ActorParent, FiniteStateMachine, SceneParent):
+class Scene(SceneType, ActorParent):
     background_color = (0., 0., 0., 1.)
     window_size = (640, 480)
     window_title = "SpriteKit"
     window_hints = None
     frame_limit = None
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.parent = None
-        self._camera = kwargs.pop("camera", Camera())
         ActorParent.__init__(self)
-        SceneParent.__init__(self, kwargs.pop("scenes", []))
-        FiniteStateMachine.__init__(self, **kwargs)
+        self._camera = Camera()
         self.viewport = window_size()
         self.clear_color = self.__class__.background_color
     
@@ -129,7 +64,7 @@ class Scene(SceneType, ActorParent, FiniteStateMachine, SceneParent):
         self._camera = value
         self._camera.dirty = True
     
-    def remove(self):
+    def remove_me(self):
         if not self.parent:
             quit()
         else:
@@ -144,13 +79,11 @@ class Scene(SceneType, ActorParent, FiniteStateMachine, SceneParent):
     def step(self, delta):
         for child in self.children:
             child.step(delta)
-        SceneParent.step(self, delta)
 
     def draw(self):
         if self.camera.dirty:
             renderer.set_world_matrix(self.camera.matrix)
         for child in reversed(self.children):
             child.draw()
-        SceneParent.draw(self)
 
-__all__ = ["Scene", "SceneParent", "SceneType"]
+__all__ = ["Scene", "SceneType"]

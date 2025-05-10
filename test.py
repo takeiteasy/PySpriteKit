@@ -5,11 +5,11 @@ class TestScene(sk.Scene):
     def enter(self):
         self.camera.position = (320, 240)
         self.camera.rotation = 45
-        self.camera.zoom = .5
+        self.camera.zoom = 2
 
-        test = sk.Texture.linear_gradient(500, 500,
-                                          color_1=(1., 0., 0., 1.),
-                                          color_2=(0., 0., 1., 1.))
+        test = sk.Texture.checkered(500, 500, 50)
+        ass = sk.SpriteSheetActor(json_path="assets/textures/Sprite-0001.json",
+                                  position=(0, 0))
 
         self.add(sk.SpriteActor(position=(0, 0),
                                 texture=test))
@@ -34,3 +34,4 @@ class TestScene(sk.Scene):
                                font_size=72,
                                align="center",
                                color=(1., 0., 0., 1.)))
+        self.add(ass)

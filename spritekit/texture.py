@@ -38,7 +38,7 @@ class Texture:
         self._dirty = False
     
     @classmethod
-    def checkered(self,
+    def checkered(cls,
                   width: int,
                   height: int,
                   square_width: int,
@@ -63,7 +63,7 @@ class Texture:
         return Texture(img)
     
     @classmethod
-    def solid(self,
+    def solid(cls,
               width: int,
               height: int,
               color: tuple | list = (1., 1., 1., 1.)):

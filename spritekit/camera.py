@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import glm
+from pyglm import glm
 
 class Camera:
     def __init__(self,
@@ -30,11 +30,10 @@ class Camera:
         self._matrix = None
 
     def _to_matrix(self):
-        mat = glm.mat4()
-        mat = glm.translate(mat, glm.vec3(*self._position, 0))
-        mat = glm.rotate(mat, self._rotation, glm.vec3(0, 0, 1))
-        mat = glm.scale(mat, glm.vec3(self._zoom, self._zoom, 1))
-        return mat
+        return (glm.mat4() *
+               glm.translate(glm.vec3(*self._position, 0)) *
+               glm.rotate(self._rotation, glm.vec3(0, 0, 1)) *
+               glm.scale(glm.vec3(self._zoom, self._zoom, 1)))
 
     @property
     def position(self):

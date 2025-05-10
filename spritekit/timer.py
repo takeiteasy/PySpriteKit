@@ -28,7 +28,6 @@ class TimerActor(Actor):
     on_tick: Optional[Callable[[float], None]] = None
     auto_start: bool = True
     remove_on_complete: Optional[bool] = None
-    cursor: Optional[float] = None
 
     def __post_init__(self):
         self._completed = False
@@ -41,8 +40,7 @@ class TimerActor(Actor):
             if self.repeat <= 0:
                 self.repeat = False
         self._initial_repeat = self.repeat
-        if self.cursor is None:
-            self.cursor = self.duration if self._running else 0
+        self._position = self.duration if self._running else 0
         if self.remove_on_complete is None:
             if isinstance(self.repeat, bool):
                 self.remove_on_complete = not self.repeat
@@ -51,21 +49,31 @@ class TimerActor(Actor):
             else:
                 self.remove_on_complete = False
 
+    @property
+    def position(self):
+        return self._position
+
+    @position.setter
+    def position(self, value: float):
+        self._position = max(min(value, self.duration), 0)  # noqa
+        if self.on_tick:
+            self.on_tick(self._position)
+
     def step(self, delta: float):
         if not self._running or self._completed:
             return
-        if self.cursor is not None and self.cursor > 0:
-            self.cursor -= delta
-            if self.cursor <= 0:
-                self.cursor = 0
-                self._running = False
-                self._completed = True
+        if self._position is not None and self._position > 0:
+            self._position -= delta
+            if self._position <= 0:
+                self._position = 0
+                self._running = False # noqa
+                self._completed = True  # noqa
                 if self.on_complete:
                     self.on_complete()
                 if self.remove_on_complete:
-                    self.remove()
+                    self.remove_me()
                 if self.repeat is not None:
-                    self.cursor = self.duration
+                    self._position = self.duration # noqa
                     if isinstance(self.repeat, bool):
                         if self.repeat:
                             self.reset()
@@ -75,32 +83,32 @@ class TimerActor(Actor):
                             self.reset()
             else:
                 if self.on_tick:
-                    self.on_tick(self.cursor)
+                    self.on_tick(self._position)
 
     def reset(self):
-        self._completed = False
+        self._completed = False # noqa
         self.repeat = self._initial_repeat
-        self.cursor = self.duration
+        self._position = self.duration # noqa
         if self.auto_start:
             self.start()
 
     def start(self):
         if not self._running:
-            self._running = True
-            self._completed = False
-            self.cursor = self.duration
+            self._running = True # noqa
+            self._completed = False # noqa
+            self._position = self.duration # noqa
 
     def stop(self):
-        self._running = False
-        self._completed = True
-        self.cursor = 0
+        self._running = False # noqa
+        self._completed = True # noqa
+        self._position = 0 # noqa
 
     def pause(self):
         if not self._completed:
-            self._running = False
+            self._running = False # noqa
 
     def resume(self):
         if not self._completed:
-            self._running = True
+            self._running = True # noqa
 
 __all__ = ["TimerActor"]

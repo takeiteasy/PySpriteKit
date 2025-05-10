@@ -39,7 +39,7 @@ def find_file(file_path, folder_names, extensions):
             raise RuntimeError(f"File '{file_path}' has invalid extension {ext}, supported extensions: {', '.join(extensions)}")
         else:
             extensions = ext
-    folders = [d for dir in folder_names for d in ['.', f"{__data_path__}/{dir}", dir]]
+    folders = [d for _dir in folder_names for d in ['.', f"{__data_path__}/{_dir}", _dir]]
     paths = []
     for folder in folders:
         if isinstance(extensions, list):
@@ -78,7 +78,7 @@ __audio_folders__ = ("audio", "music", "sfx")
 def _load_image(name, flip=True):
     img = Image.open(name).convert('RGBA')
     if flip:
-        img = img.transpose(Image.FLIP_TOP_BOTTOM)
+        img = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
     return img
 
 @_ensure_cached(type_name="images",
@@ -90,13 +90,13 @@ def load_image(name, flip=True):
 @_ensure_cached(type_name="textures",
                 folder_names=__image_folders__,
                 extensions=__image_extensions__)
-def load_texture(name, flip=True, filter=(moderngl.NEAREST, moderngl.NEAREST), mipmaps=True, cache_image=False):
+def load_texture(name, flip=True, sampler=(moderngl.NEAREST, moderngl.NEAREST), mipmaps=True, cache_image=False):
     ctx = moderngl.get_context()
     img = load_image(name, flip=flip) if cache_image else _load_image(name, flip)
     texture = ctx.texture(img.size, 4, img.tobytes())
     if mipmaps:
         texture.build_mipmaps()
-    texture.filter = filter
+    texture.filter = sampler
     return texture
 
 @_ensure_cached(type_name="waves",
