@@ -18,10 +18,11 @@
 from typing import Callable, Type
 
 from .actor import Actor
-from .timer import TimerActor
+from .timer import TimerNode
 
-class EmitterActor(TimerActor):
+class EmitterNode(TimerNode):
     def __init__(self,
+                 repeat: bool | int = True,
                  emit: Callable[[], Actor] | Actor | tuple[Type[Actor], dict] = None,
                  **kwargs):
         self._user_on_complete = kwargs.pop("on_complete", None)
@@ -34,7 +35,7 @@ class EmitterActor(TimerActor):
             self._type = emit[0]
             self._args = emit[1]
             self._emit = staticmethod(self._create)
-        super().__init__(on_complete=self._spawn, **kwargs)
+        super().__init__(on_complete=self._spawn, repeat=repeat, **kwargs)
         if self.auto_start:
             self._emit()
     
@@ -51,4 +52,4 @@ class EmitterActor(TimerActor):
         if self._user_on_complete:
             self._user_on_complete()
 
-__all__ = ["EmitterActor"]
+__all__ = ["EmitterNode"]

@@ -40,16 +40,7 @@ def _line_vertices(x1, y1, x2, y2, color=(1, 1, 1, 1), thickness=1.):
 def _rotate_point(x, y, c, s):
     return glm.vec2(x * c - y * s, x * s + y * c)
 
-def _normalise_texcoords(clip):
-    cx, cy, cw, ch = clip
-    nx = cx * cw
-    ny = cy * ch
-    return (nx / 1.,
-            1.0 - (ny + ch) / 1.,
-            (nx + cw) / 1.,
-            1.0 - ny / 1.)
-
-class LineActor(drawable.Drawable):
+class LineNode(drawable.Drawable):
     def __init__(self,
                  end: glm.vec2 | list[float] | tuple[float, float] = (0., 0.),
                  **kwargs):
@@ -81,7 +72,7 @@ class LineActor(drawable.Drawable):
     def _generate_outline_vertices(self):
         return self._generate_vertices()
 
-class RectActor(drawable.Drawable):
+class RectNode(drawable.Drawable):
     def __init__(self,
                  size: glm.vec2 | list | tuple = (1., 1.),
                  **kwargs):
@@ -117,13 +108,12 @@ class RectActor(drawable.Drawable):
     
     def _generate_vertices(self):
         p1, p2, p3, p4 = self.points
-        tc = _normalise_texcoords((0, 0, 1, 1))
-        return [*p1, tc[0], tc[1], *self._color,
-                *p2, tc[2], tc[1], *self._color,
-                *p3, tc[0], tc[3], *self._color,
-                *p3, tc[0], tc[3], *self._color,
-                *p4, tc[2], tc[3], *self._color,
-                *p2, tc[2], tc[1], *self._color]
+        return [*p1, 0., 0., *self._color,
+                *p2, 0., 0., *self._color,
+                *p3, 0., 0., *self._color,
+                *p3, 0., 0., *self._color,
+                *p4, 0., 0., *self._color,
+                *p2, 0., 0., *self._color]
     
     def _generate_outline_vertices(self):
         p1, p2, p3, p4 = self.points
@@ -132,7 +122,7 @@ class RectActor(drawable.Drawable):
                 *_line_vertices(*p1, *p3, *self._color, self._thickness),
                 *_line_vertices(*p2, *p4, *self._color, self._thickness)]
 
-class EllipseActor(drawable.Drawable):
+class EllipseNode(drawable.Drawable):
     def __init__(self,
                  width: float = 1.,
                  height: float = 1.,
@@ -199,7 +189,7 @@ class EllipseActor(drawable.Drawable):
             vertices.extend(*_line_vertices(*points[i], *(points[(i + 1) % len(points)]), *self._color, self._thickness))
         return vertices
 
-class CircleActor(EllipseActor):
+class CircleNode(EllipseNode):
     def __init__(self,
                  radius: float = 1.,
                  **kwargs):
@@ -236,7 +226,7 @@ class CircleActor(EllipseActor):
         self._radius = value
         self._dirty = True
 
-class PolygonActor(drawable.Drawable):
+class PolygonNode(drawable.Drawable):
     def __init__(self,
                  points: list | tuple,
                  sort: bool = False,
@@ -310,4 +300,4 @@ class PolygonActor(drawable.Drawable):
             vertices.extend(*_line_vertices(*sorted_points[i], *(sorted_points[(i + 1) % len(sorted_points)]), *self._color, self._thickness))
         return vertices
 
-__all__ = ['LineActor', 'RectActor', 'CircleActor', 'EllipseActor', 'PolygonActor']
+__all__ = ['LineNode', 'RectNode', 'CircleNode', 'EllipseNode', 'PolygonNode']

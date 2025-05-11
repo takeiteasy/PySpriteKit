@@ -21,7 +21,7 @@ from typing import Optional, Callable
 from .actor import Actor
 
 @dataclass
-class TimerActor(Actor):
+class TimerType:
     duration: float = 1.
     repeat: Optional[bool | int] = None
     on_complete: Optional[Callable[[], None]] = None
@@ -29,7 +29,13 @@ class TimerActor(Actor):
     auto_start: bool = True
     remove_on_complete: Optional[bool] = None
 
-    def __post_init__(self):
+class TimerNode(TimerType, Actor):
+    def __init__(self, **kwargs):
+        Actor.__init__(self,
+                       name=kwargs.pop("name", None),
+                       on_added=kwargs.pop("on_added", None),
+                       on_removed=kwargs.pop("on_removed", None))
+        TimerType.__init__(self, **kwargs)
         self._completed = False
         self._running = self.auto_start
         if self.repeat is None:
@@ -66,14 +72,14 @@ class TimerActor(Actor):
             self._position -= delta
             if self._position <= 0:
                 self._position = 0
-                self._running = False # noqa
-                self._completed = True  # noqa
+                self._running = False
+                self._completed = True
                 if self.on_complete:
                     self.on_complete()
                 if self.remove_on_complete:
                     self.remove_me()
                 if self.repeat is not None:
-                    self._position = self.duration # noqa
+                    self._position = self.duration
                     if isinstance(self.repeat, bool):
                         if self.repeat:
                             self.reset()
@@ -86,29 +92,29 @@ class TimerActor(Actor):
                     self.on_tick(self._position)
 
     def reset(self):
-        self._completed = False # noqa
+        self._completed = False
         self.repeat = self._initial_repeat
-        self._position = self.duration # noqa
+        self._position = self.duration
         if self.auto_start:
             self.start()
 
     def start(self):
         if not self._running:
-            self._running = True # noqa
-            self._completed = False # noqa
-            self._position = self.duration # noqa
+            self._running = True
+            self._completed = False
+            self._position = self.duration
 
     def stop(self):
-        self._running = False # noqa
-        self._completed = True # noqa
-        self._position = 0 # noqa
+        self._running = False
+        self._completed = True
+        self._position = 0
 
     def pause(self):
         if not self._completed:
-            self._running = False # noqa
+            self._running = False
 
     def resume(self):
         if not self._completed:
-            self._running = True # noqa
+            self._running = True
 
-__all__ = ["TimerActor"]
+__all__ = ["TimerNode"]

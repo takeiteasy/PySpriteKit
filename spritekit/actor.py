@@ -19,8 +19,11 @@ from dataclasses import dataclass, field
 from typing import Optional, Callable, Any
 from uuid import uuid4
 
+@dataclass
 class ActorType:
-    pass
+    name: str = field(default_factory=lambda: uuid4().hex)
+    on_added: Optional[Callable[[], Any]] = None
+    on_removed: Optional[Callable[[], Any]] = None
 
 class ActorParent:
     def __init__(self):
@@ -67,14 +70,9 @@ class ActorParent:
     def clear(self):
         self.children = []
 
-@dataclass
 class Actor(ActorType, ActorParent):
-    name: str = field(default_factory=lambda: uuid4().hex)
-    on_added: Optional[Callable[[], Any]] = None
-    on_removed: Optional[Callable[[], Any]] = None
-
     def __init__(self, **kwargs):
-        ActorType.__init__(self)
+        ActorType.__init__(self, **kwargs)
         ActorParent.__init__(self)
 
     def __str__(self):

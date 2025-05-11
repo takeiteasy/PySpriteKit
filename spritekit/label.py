@@ -19,13 +19,13 @@ from functools import reduce
 from typing import Optional
 
 from .cache import load_font
-from .shapes import RectActor
+from .shapes import RectNode
 from .texture import _convert_color
 
 import moderngl
 from PIL import ImageFont, ImageDraw, Image
 
-class LabelActor(RectActor):
+class LabelNode(RectNode):
     def __init__(self,
                  text: str,
                  font: str | ImageFont.FreeTypeFont | ImageFont.ImageFont,
@@ -158,4 +158,4 @@ class LabelActor(RectActor):
         self._texture = moderngl.get_context().texture(image.size, 4, image.tobytes())
         return super()._generate_vertices()
 
-__all__ = ["LabelActor"]
+__all__ = ["LabelNode"]

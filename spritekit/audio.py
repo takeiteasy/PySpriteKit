@@ -18,7 +18,7 @@
 from typing import Optional, Callable
 
 from .actor import Actor
-from .timer import TimerActor
+from .timer import TimerNode
 from .cache import *
 
 import raudio as r
@@ -113,7 +113,7 @@ class SoundActor(BaseAudio):
     
     def _restart(self):
         if self._wait > 0. and not self._wait_timer:
-            self.add(TimerActor(duration=self._wait, on_complete=self._start))
+            self.add(TimerNode(duration=self._wait, on_complete=self._start))
             self._wait_timer = True
         else:
             self._start()

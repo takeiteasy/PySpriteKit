@@ -31,9 +31,9 @@ class Camera:
 
     def _to_matrix(self):
         return (glm.mat4() *
-               glm.translate(glm.vec3(*self._position, 0)) *
-               glm.rotate(self._rotation, glm.vec3(0, 0, 1)) *
-               glm.scale(glm.vec3(self._zoom, self._zoom, 1)))
+                glm.translate(glm.vec3(*self._position, 0)) *
+                glm.rotate(self._rotation, glm.vec3(0, 0, 1)) *
+                glm.scale(glm.vec3(self._zoom, self._zoom, 1)))
 
     @property
     def position(self):
