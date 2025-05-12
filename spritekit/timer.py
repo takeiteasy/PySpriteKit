@@ -36,24 +36,8 @@ class TimerNode(TimerType, Actor):
                        on_added=kwargs.pop("on_added", None),
                        on_removed=kwargs.pop("on_removed", None))
         TimerType.__init__(self, **kwargs)
-        self._completed = False
+        self._position = self.duration
         self._running = self.auto_start
-        if self.repeat is None:
-            self.repeat = False
-        elif isinstance(self.repeat, bool):
-            pass
-        elif isinstance(self.repeat, int):
-            if self.repeat <= 0:
-                self.repeat = False
-        self._initial_repeat = self.repeat
-        self._position = self.duration if self._running else 0
-        if self.remove_on_complete is None:
-            if isinstance(self.repeat, bool):
-                self.remove_on_complete = not self.repeat
-            elif isinstance(self.repeat, int):
-                self.remove_on_complete = self.repeat > 0
-            else:
-                self.remove_on_complete = False
 
     @property
     def position(self):
@@ -65,56 +49,46 @@ class TimerNode(TimerType, Actor):
         if self.on_tick:
             self.on_tick(self._position)
 
-    def step(self, delta: float):
-        if not self._running or self._completed:
-            return
-        if self._position is not None and self._position > 0:
-            self._position -= delta
-            if self._position <= 0:
-                self._position = 0
-                self._running = False
-                self._completed = True
-                if self.on_complete:
-                    self.on_complete()
-                if self.remove_on_complete:
-                    self.remove_me()
-                if self.repeat is not None:
-                    self._position = self.duration
-                    if isinstance(self.repeat, bool):
-                        if self.repeat:
-                            self.reset()
-                    elif isinstance(self.repeat, int):
-                        if self.repeat > 0:
-                            self.repeat -= 1
-                            self.reset()
-            else:
-                if self.on_tick:
-                    self.on_tick(self._position)
+    def _end(self):
+        self._running = False
+        self._position = 0
+        if self.remove_on_complete:
+            self.remove_me()
 
-    def reset(self):
-        self._completed = False
-        self.repeat = self._initial_repeat
-        self._position = self.duration
-        if self.auto_start:
-            self.start()
+    def step(self, delta: float):
+        if not self._running:
+            return
+        self._position -= delta
+        if self.on_tick:
+            self.on_tick(self._position)
+        if self._position <= 0:
+            if self.on_complete:
+                self.on_complete()
+            match self.repeat:
+                case bool():
+                    if self.repeat:
+                        self._position = self.duration
+                    else:
+                        self._end()
+                case int():
+                    self.repeat -= 1
+                    if self.repeat <= 0:
+                        self._end()
+                case _:
+                    self._end()
 
     def start(self):
-        if not self._running:
-            self._running = True
-            self._completed = False
-            self._position = self.duration
+        self._running = True
+        self._position = self.duration
 
     def stop(self):
         self._running = False
-        self._completed = True
-        self._position = 0
+        self._position = self.duration
 
     def pause(self):
-        if not self._completed:
-            self._running = False
+        self._running = False
 
     def resume(self):
-        if not self._completed:
-            self._running = True
+        self._running = True
 
 __all__ = ["TimerNode"]

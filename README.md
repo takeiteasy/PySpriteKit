@@ -4,7 +4,7 @@
 > Work in progress, see [TODO](#todo)
 
 > [!NOTE]
-> `pip install spritekit==0.2.1`
+> `pip install spritekit==0.2.2`
 
 2D scene+actor framework based off Apple's SpriteKit. See [test.py](https://github.com/takeiteasy/PySpriteKit/blob/master/test.py) for working example.
 
@@ -15,14 +15,13 @@
 - [X] Automatic batched rendering
 - [X] Automatic asset cache
 - [X] Line, Rectangle, Ellipse, Circle, Polygon
-- [X] Sprites
+- [X] Sprites + SpriteSheets + Animation
 - [X] Labels
 - [X] Actions, Timer, Emitter
 - [X] Music + Sounds
 
 ## TODO
 
-- [ ] SpriteSheets + Animation
 - [ ] Input handling
 - [ ] Event broadcasting
 - [ ] Framebuffers + Shader classes
