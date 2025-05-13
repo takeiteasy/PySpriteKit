@@ -99,14 +99,14 @@ class Transition:
     prepare: Optional[str | list[str]] = None
     kwargs: dict = field(default_factory=dict)
 
-def _explode(t: Transition):
-    a = {k: t.__dict__[k] for k in t.__annotations__.keys() if not k.startswith("_")}
-    for k, v in a.items():
-        if v is None:
-            a.pop(k)
-    b = a.pop("kwargs")
-    a.update(**b)
-    return a
+    def explode(self):
+        a = {k: self.__dict__[k] for k in t.__annotations__.keys() if not k.startswith("_")}
+        for k, v in a.items():
+            if v is None:
+                a.pop(k)
+        b = a.pop("kwargs")
+        a.update(**b)
+        return a
 
 class FiniteStateMachine:
     states: list[str | Enum] = []
@@ -118,7 +118,7 @@ class FiniteStateMachine:
                 kwargs["initial"] = self.states[0]
             self._machine = transitions.Machine(model=self,
                                                 states=self.states,
-                                                transitions=[_explode(t) if isinstance(t, Transition) else t for t in self.transitions],
+                                                transitions=[t.explode() if isinstance(t, Transition) else t for t in self.transitions],
                                                 **kwargs)
         else:
             self._machine = None

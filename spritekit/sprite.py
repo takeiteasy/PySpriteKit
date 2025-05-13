@@ -19,17 +19,18 @@ from typing import Optional
 from dataclasses import dataclass
 import json
 
+from . import _drawable as drawable
+from .shapes import _rect_points
 from .cache import load_texture, find_file, __image_folders__
-from .shapes import RectNode
 from .timer import TimerNode
 
 from pyglm import glm
 import moderngl
 from PIL import Image
 
-class SpriteNode(RectNode):
+class SpriteNode(drawable.Drawable):
     def __init__(self,
-                 texture: Image.Image | str = None,
+                 texture: Image.Image | str | moderngl.Texture,
                  clip: glm.vec4 | tuple | list = None,
                  **kwargs):
         super().__init__(**kwargs)
@@ -75,6 +76,10 @@ class SpriteNode(RectNode):
     @size.setter
     def size(self, value: glm.vec2 | tuple | list):
         self._set_clip(value)
+
+    @property
+    def points(self):
+        return _rect_points(*self._position, *self._size, self._rotation, self._scale)
 
     def _generate_vertices(self):
         p1, p2, p3, p4 = self.points

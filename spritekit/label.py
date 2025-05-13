@@ -18,17 +18,19 @@
 from functools import reduce
 from typing import Optional
 
+from . import _drawable as drawable
+from .shapes import _rect_points
 from .cache import load_font
-from .shapes import RectNode
 
 import moderngl
 from PIL import ImageFont, ImageDraw, Image
+from pyglm import glm
 
 def _convert_color(color: tuple | list):
     assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 values"
     return tuple(min(max(v if isinstance(v, int) else int(v * 255.), 0), 255) for v in (color if len(color) == 4 else (*color, 255)))
 
-class LabelNode(RectNode):
+class LabelNode(drawable.Drawable):
     def __init__(self,
                  text: str,
                  font: str | ImageFont.FreeTypeFont | ImageFont.ImageFont,
@@ -44,7 +46,7 @@ class LabelNode(RectNode):
         self._is_truetype = False
         self._load_font(font, font_size)
         self._text = text
-        self.size = tuple(self._calculate_full_size2(text.split("\n")))
+        self._size = tuple(self._calculate_full_size2(text.split("\n")))
         self._background_color = _convert_color(background) if background is not None else (0, 0, 0, 0)
         self._texture = None
         self._align = align
@@ -139,6 +141,14 @@ class LabelNode(RectNode):
     def _calculate_full_size2(self, lines: list[str]):
         width, height, _ = self._calculate_full_size(lines)
         return width, height
+
+    @property
+    def size(self):
+        return self._size
+
+    @property
+    def points(self):
+        return _rect_points(*self._position, *self._size, self._rotation, self._scale)
     
     def _generate_vertices(self):
         lines = self._text.split("\n")
@@ -159,6 +169,14 @@ class LabelNode(RectNode):
         if self._texture is not None:
             del self._texture
         self._texture = moderngl.get_context().texture(image.size, 4, image.tobytes())
-        return super()._generate_vertices()
+        p1, p2, p3, p4 = self.points
+        tx, ty = glm.vec2(*self._texture.size)
+        tw, th = self._size / glm.vec2(*self._texture.size)
+        return [*p1, tx, ty, *self._color,
+                *p2, tx + tw, ty, *self._color,
+                *p3, tx, ty + th, *self._color,
+                *p3, tx, ty + th, *self._color,
+                *p4, tx + tw, ty + th, *self._color,
+                *p2, tx + tw, ty, *self._color]
 
 __all__ = ["LabelNode"]

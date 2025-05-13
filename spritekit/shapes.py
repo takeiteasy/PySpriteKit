@@ -37,6 +37,21 @@ def _line_vertices(x1, y1, x2, y2, color=(1, 1, 1, 1), thickness=1.):
             *p4, 0, 0, *color,
             *p3, 0, 0, *color]
 
+def _rect_points(x, y, w, h, rotation, scale):
+    hw = w / 2
+    hh = h / 2
+    x1 = (x - hw) * scale
+    x2 = (x + hw) * scale
+    y1 = (y - hh) * scale
+    y2 = (y + hh) * scale
+    c = math.cos(rotation)
+    s = math.sin(rotation)
+    p1 = _rotate_point(x1, y1, c, s)
+    p2 = _rotate_point(x2, y1, c, s)
+    p3 = _rotate_point(x1, y2, c, s)
+    p4 = _rotate_point(x2, y2, c, s)
+    return p1, p2, p3, p4
+
 def _rotate_point(x, y, c, s):
     return glm.vec2(x * c - y * s, x * s + y * c)
 
@@ -92,20 +107,8 @@ class RectNode(drawable.Drawable):
 
     @property
     def points(self):
-        hw = self._size.x / 2
-        hh = self._size.y / 2
-        x1 = (self._position.x - hw) * self._scale
-        x2 = (self._position.x + hw) * self._scale
-        y1 = (self._position.y - hh) * self._scale
-        y2 = (self._position.y + hh) * self._scale
-        c = math.cos(self._rotation)
-        s = math.sin(self._rotation)
-        p1 = _rotate_point(x1, y1, c, s)
-        p2 = _rotate_point(x2, y1, c, s)
-        p3 = _rotate_point(x1, y2, c, s)
-        p4 = _rotate_point(x2, y2, c, s)
-        return p1, p2, p3, p4
-    
+        return _rect_points(*self._position, *self._size, self._rotation, self._scale)
+
     def _generate_vertices(self):
         p1, p2, p3, p4 = self.points
         return [*p1, 0., 0., *self._color,
