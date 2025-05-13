@@ -19,7 +19,6 @@ import math
 
 from .actor import Actor
 from . import _renderer as renderer
-from .texture import Texture
 
 import moderngl
 from pyglm import glm
@@ -123,7 +122,5 @@ class Drawable(Actor):
                 renderer.draw(vertices, None if self._wireframe else self._texture)
             case moderngl.Texture():
                 renderer.draw(vertices, self._texture)
-            case Texture():
-                renderer.draw(vertices, self._texture.raw)
         super().draw()
 

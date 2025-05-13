@@ -19,7 +19,7 @@ import platform
 from typing import Optional
 
 from .window import window_size
-from .shader import default_shader
+from . import _shader
 
 import moderngl
 from pyglm import glm
@@ -73,7 +73,7 @@ class Renderer:
                  viewport: Optional[tuple[int | float, int | float]] = None,
                  clear_color: tuple[float, float, float, float] = (0, 0, 0, 1)):
         self._ctx = moderngl.get_context()
-        vs, fs = default_shader.compile()
+        vs, fs = _shader.default_shader.compile()
         self._program = self._ctx.program(vertex_shader=vs, fragment_shader=fs)
         self.size = window_size() if viewport is None else viewport
         self._view = glm.mat4()

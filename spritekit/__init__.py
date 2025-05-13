@@ -25,10 +25,7 @@ from .emitter import *
 from .label import *
 from .main import *
 from .scene import *
-from .shader import *
 from .shapes import *
 from .sprite import *
-from .state import *
-from .texture import *
 from .timer import *
 from .window import *

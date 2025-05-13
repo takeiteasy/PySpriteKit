@@ -16,13 +16,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import json
 
-from .actor import Actor
 from .cache import load_texture, find_file, __image_folders__
 from .shapes import RectNode
-from .texture import Texture
 from .timer import TimerNode
 
 from pyglm import glm
@@ -31,7 +29,7 @@ from PIL import Image
 
 class SpriteNode(RectNode):
     def __init__(self,
-                 texture: Texture | str = None,
+                 texture: Image.Image | str = None,
                  clip: glm.vec4 | tuple | list = None,
                  **kwargs):
         super().__init__(**kwargs)
@@ -39,8 +37,8 @@ class SpriteNode(RectNode):
             case str():
                 self._texture = load_texture(texture)
             case Image.Image():
-                self._texture = Texture(texture)
-            case moderngl.Texture() | Texture():
+                self._texture = moderngl.get_context().texture(texture.size, 4, texture.tobytes())
+            case moderngl.Texture():
                 self._texture = texture
             case _:
                 raise ValueError("Invalid texture type")
@@ -172,10 +170,31 @@ class AtlasNode(SpriteNode):
         self._animation_timer = TimerNode(duration=self._animations[name][0].duration,
                                           repeat=True,
                                           auto_start=True,
-                                          on_complete=self._next_frame)
+                                          on_complete=self.next_frame)
         self._set_frame(self._animations[name][0])
 
-    def _next_frame(self):
+    @property
+    def animation(self):
+        return self._current_animation
+
+    @animation.setter
+    def animation(self, value: str):
+        self._set_animation(value)
+
+    @property
+    def frame(self):
+        if not self._current_animation:
+            return None
+        else:
+            return self._animations[self._current_animation][self._animation_cursor]
+
+    @frame.setter
+    def frame(self, value: str | int):
+        self._set_frame(str(value) if isinstance(value, int) else value)
+
+    def next_frame(self):
+        if not self._current_animation:
+            return
         self._animation_cursor += 1
         if self._animation_cursor >= len(self._animations[self._current_animation]):
             self._animation_cursor = 0

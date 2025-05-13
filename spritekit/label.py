@@ -20,10 +20,13 @@ from typing import Optional
 
 from .cache import load_font
 from .shapes import RectNode
-from .texture import _convert_color
 
 import moderngl
 from PIL import ImageFont, ImageDraw, Image
+
+def _convert_color(color: tuple | list):
+    assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 values"
+    return tuple(min(max(v if isinstance(v, int) else int(v * 255.), 0), 255) for v in (color if len(color) == 4 else (*color, 255)))
 
 class LabelNode(RectNode):
     def __init__(self,

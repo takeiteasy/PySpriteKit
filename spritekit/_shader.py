@@ -1,4 +1,4 @@
-# spritekit/shader.py
+# spritekit/_shader.py
 #
 # Copyright (C) 2025 George Watson
 #

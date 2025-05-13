@@ -15,12 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Optional
+from enum import Enum
+from dataclasses import dataclass, field
+
 from .actor import ActorParent
 from . import _renderer as renderer
 from . import _drawable as drawable
-from .state import FiniteStateMachine
 from .window import window_size
 from .camera import Camera
+
+import transitions
 
 class SceneType:
     pass
@@ -86,4 +91,45 @@ class Scene(SceneType, ActorParent):
         for child in reversed(self.children):
             child.draw()
 
-__all__ = ["Scene", "SceneType"]
+@dataclass
+class Transition:
+    trigger: str
+    source: str | Enum | list
+    dest: str | Enum
+    conditions: Optional[str | list[str]] = None
+    unless: Optional[str | list[str]] = None
+    before: Optional[str | list[str]] = None
+    after: Optional[str | list[str]] = None
+    prepare: Optional[str | list[str]] = None
+    kwargs: dict = field(default_factory=dict)
+
+def _explode(t: Transition):
+    a = {k: t.__dict__[k] for k in t.__annotations__.keys() if not k.startswith("_")}
+    for k, v in a.items():
+        if v is None:
+            a.pop(k)
+    b = a.pop("kwargs")
+    a.update(**b)
+    return a
+
+class FiniteStateMachine:
+    states: list[str | Enum] = []
+    transitions: list[dict | Transition] = []
+
+    def __init__(self, **kwargs):
+        if self.states:
+            if not "initial" in kwargs:
+                kwargs["initial"] = self.states[0]
+            self._machine = transitions.Machine(model=self,
+                                                states=self.states,
+                                                transitions=[_explode(t) if isinstance(t, Transition) else t for t in self.transitions],
+                                                **kwargs)
+        else:
+            self._machine = None
+
+class Director(Scene, FiniteStateMachine):
+    def __init__(self, **kwargs):
+        Scene.__init__(self)
+        FiniteStateMachine.__init__(self, **kwargs)
+
+__all__ = ["Scene", "SceneType", "Transition", "FiniteStateMachine", "Director"]
