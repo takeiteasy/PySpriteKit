@@ -850,70 +850,8 @@ class Window(WindowType):
     def quit(self):
         self.should_close = True
 
-__window__ = None
-
-def init_window(width: int = 640,
-                 height: int = 480,
-                 title: str = "PySpriteKit",
-                 versions: Optional[tuple[int, int, bool]] = None,
-                 frame_limit: Optional[int | float] = None,
-                 hints: Optional[dict] = None):
-    global __window__
-    if __window__ is not None:
-        raise RuntimeError("Window already initialized")
-    if not bool(glfw.glfwInit()):
-        raise glfw.NotInitializedError()
-    atexit.register(glfw.glfwTerminate) 
-    if not versions:
-        versions = (3, 3, True), (3, 2, True), (3, 1, False), (3, 0, False)
-    else:
-        if not isinstance(versions, list):
-            versions = [versions]
-    for vermaj, vermin, iscore in versions:
-        try:
-            Window.hint()
-            Window.hint(context_version=(vermaj, vermin))
-            if iscore:
-                Window.hint(forward_compat=True)
-                Window.hint(opengl_profile=Window.CORE_PROFILE)
-            break
-        except (glfw.PlatformError, glfw.VersionUnavailableError, ValueError) as e:
-            iscore_str = 'CORE' if iscore else ''
-            print("%s.%s %s: %s" % (vermaj, vermin, iscore_str, e))
-    else:
-        raise SystemExit("Proper OpenGL 3.x context not found")
-    __window__ = Window(width, height, title, hints=hints, frame_limit=frame_limit)
-
-def _window_attrib(func):
-    def wrapper(*args, **kwargs):
-        if __window__ is None:
-            raise RuntimeError("No window created")
-        return func()
-    return wrapper
-
-@_window_attrib
-def get_window():
-    return __window__
-
-@_window_attrib
-def window_should_close():
-    return __window__.should_close
-
-@_window_attrib
-def window_width():
-    return __window__.width
-
-@_window_attrib
-def window_height():
-    return __window__.height
-
-@_window_attrib
-def window_size():
-    return __window__.size
-
-__all__ = ["KeyEvent", "CharEvent", "ScrollEvent", "MouseButtonEvent",
-           "CursorEnterEvent", "CursorPosEvent", "WindowSizeEvent", "WindowPosEvent",
-           "WindowCloseEvent", "WindowRefreshEvent", "WindowFocusEvent",
-           "WindowIconifyEvent", "FrameBufferSizeEvent", "Hints", "Keys", "Mice",
-           "Joystick", "Monitor", "VideoMode", "get_window", "init_window",
-           "window_should_close", "window_width", "window_height", "window_size"]
+__all__ = ["Window",
+           "EventType", "KeyEvent", "CharEvent", "ScrollEvent", "MouseButtonEvent", "CursorEnterEvent",
+           "CursorPosEvent", "WindowSizeEvent", "WindowPosEvent", "WindowCloseEvent", "WindowRefreshEvent",
+           "WindowFocusEvent", "WindowIconifyEvent", "FrameBufferSizeEvent",
+           "Hints", "Keys", "Mice", "Joystick", "Monitor", "VideoMode"]

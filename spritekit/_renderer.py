@@ -18,7 +18,7 @@
 import platform
 from typing import Optional
 
-from .window import window_size
+from .main import window_size
 from . import _shader
 
 import moderngl

@@ -19,10 +19,10 @@ from typing import Optional
 from enum import Enum
 from dataclasses import dataclass, field
 
+from .window import EventType
 from .actor import ActorParent
 from . import _renderer as renderer
 from . import _drawable as drawable
-from .window import window_size
 from .camera import Camera
 
 import transitions
@@ -41,16 +41,7 @@ class Scene(SceneType, ActorParent):
         self.parent = None
         ActorParent.__init__(self)
         self._camera = Camera()
-        self.viewport = window_size()
         self.clear_color = self.__class__.background_color
-    
-    @property
-    def viewport(self):
-        return renderer.get_viewport()
-    
-    @viewport.setter
-    def viewport(self, value: tuple[int, int]):
-        renderer.set_viewport(value)
     
     @property
     def clear_color(self):
@@ -81,15 +72,20 @@ class Scene(SceneType, ActorParent):
     def exit(self):
         pass
 
+    def event(self, event: EventType):
+        pass
+
     def step(self, delta):
         for child in self.children:
             child.step(delta)
 
     def draw(self):
+        if not self.children:
+            return
         if self.camera.dirty:
             renderer.set_world_matrix(self.camera.matrix)
-        for child in reversed(self.children):
-            child.draw()
+        for i in range(len(self.children) - 1, -1, -1):
+            self.children[i].draw()
 
 @dataclass
 class Transition:
