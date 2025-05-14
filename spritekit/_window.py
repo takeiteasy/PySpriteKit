@@ -1,4 +1,4 @@
-# spritekit/window.py
+# spritekit/_window.py
 #
 # Copyright (C) 2025 George Watson
 #

@@ -64,14 +64,6 @@ class Camera:
         self._dirty = True
 
     @property
-    def dirty(self):
-        return self._dirty
-
-    @dirty.setter
-    def dirty(self, value: bool):
-        self._dirty = value
-
-    @property
     def matrix(self):
         if self._dirty:
             self._matrix = self._to_matrix()

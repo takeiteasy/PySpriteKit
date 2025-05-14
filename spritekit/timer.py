@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-from typing import Optional, Callable
+from typing import Optional, Callable, Type
 
 from .actor import Actor
 
@@ -91,4 +91,37 @@ class TimerNode(TimerType, Actor):
     def resume(self):
         self._running = True
 
-__all__ = ["TimerNode"]
+
+class EmitterNode(TimerNode):
+    def __init__(self,
+                 repeat: bool | int = True,
+                 emit: Callable[[], Actor] | Actor | tuple[Type[Actor], dict] = None,
+                 **kwargs):
+        self._user_on_complete = kwargs.pop("on_complete", None)
+        if callable(emit):
+            self._emit = staticmethod(emit)
+        elif isinstance(emit, Actor):
+            self._copy = emit.clone()
+            self._emit = staticmethod(self._clone)
+        else:
+            self._type = emit[0]
+            self._args = emit[1]
+            self._emit = staticmethod(self._create)
+        super().__init__(on_complete=self._spawn, repeat=repeat, **kwargs)
+        if self.auto_start:
+            self._emit()
+
+    def _clone(self):
+        return self._copy.clone()
+
+    def _create(self):
+        return self._type(**self._args)
+
+    def _spawn(self):
+        assert self.parent is not None, "Emitter must have a parent"
+        assert callable(self._emit), "Emitter must be callable"
+        self.parent.add(self._emit())
+        if self._user_on_complete:
+            self._user_on_complete()
+
+__all__ = ["TimerNode", "EmitterNode"]

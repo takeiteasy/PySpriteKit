@@ -76,10 +76,6 @@ class ActionNode(ActionType, TimerNode):
         self.on_tick = self._step
 
     @property
-    def completed(self):
-        return self._completed
-
-    @property
     def running(self):
         return self._running
 
@@ -109,7 +105,6 @@ class WaitAction(ActionType, TimerNode):
     def __init__(self, **kwargs):
         self._on_complete_usr = kwargs.pop("on_complete", None)
         TimerNode.__init__(self, on_complete=self._on_complete, **kwargs)
-        self._completed = False
 
     @property
     def completed(self):
@@ -137,7 +132,6 @@ class ActionSequence(ActionType, TimerNode, Queue):
             self.start()
 
     def _complete(self):
-        self._completed = True
         self._running = False
         if self.on_complete:
             self.on_complete()
@@ -165,7 +159,6 @@ class ActionSequence(ActionType, TimerNode, Queue):
 
     @override
     def reset(self):
-        self._completed = False # noqa
         self._head = None
         self.queue.clear()
         for action in self._actions:
@@ -177,8 +170,7 @@ class ActionSequence(ActionType, TimerNode, Queue):
             return
         if self.empty():
             raise RuntimeError("ActionSequence is empty")
-        self._running = True # noqa
-        self._completed = False # noqa
+        self._running = True
         self._head = None
 
     @override

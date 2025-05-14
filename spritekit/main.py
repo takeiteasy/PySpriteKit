@@ -22,7 +22,7 @@ import atexit
 from . import _renderer as renderer
 from . import _glfw as glfw
 from .scene import Scene
-from .window import *
+from ._window import *
 
 __window__: Optional[Window] = None
 

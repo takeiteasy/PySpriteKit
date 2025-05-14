@@ -19,7 +19,7 @@ from typing import Optional
 from dataclasses import dataclass
 import json
 
-from . import _drawable as drawable
+from ._drawable import Drawable
 from .shapes import _rect_points
 from .cache import load_texture, find_file, __image_folders__
 from .timer import TimerNode
@@ -28,7 +28,7 @@ from pyglm import glm
 import moderngl
 from PIL import Image
 
-class SpriteNode(drawable.Drawable):
+class SpriteNode(Drawable):
     def __init__(self,
                  texture: Image.Image | str | moderngl.Texture,
                  clip: glm.vec4 | tuple | list = None,

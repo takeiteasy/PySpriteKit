@@ -18,7 +18,7 @@
 from functools import reduce
 from typing import Optional
 
-from . import _drawable as drawable
+from ._drawable import Drawable
 from .shapes import _rect_points
 from .cache import load_font
 
@@ -30,7 +30,7 @@ def _convert_color(color: tuple | list):
     assert 3 <= len(color) <= 4, "Color must be a list of 3 or 4 values"
     return tuple(min(max(v if isinstance(v, int) else int(v * 255.), 0), 255) for v in (color if len(color) == 4 else (*color, 255)))
 
-class LabelNode(drawable.Drawable):
+class LabelNode(Drawable):
     def __init__(self,
                  text: str,
                  font: str | ImageFont.FreeTypeFont | ImageFont.ImageFont,
@@ -172,11 +172,11 @@ class LabelNode(drawable.Drawable):
         p1, p2, p3, p4 = self.points
         tx, ty = glm.vec2(*self._texture.size)
         tw, th = self._size / glm.vec2(*self._texture.size)
-        return [*p1, tx, ty, *self._color,
-                *p2, tx + tw, ty, *self._color,
-                *p3, tx, ty + th, *self._color,
-                *p3, tx, ty + th, *self._color,
+        return [*p1, tx,      ty,      *self._color,
+                *p2, tx + tw, ty,      *self._color,
+                *p3, tx,      ty + th, *self._color,
+                *p3, tx,      ty + th, *self._color,
                 *p4, tx + tw, ty + th, *self._color,
-                *p2, tx + tw, ty, *self._color]
+                *p2, tx + tw, ty,      *self._color]
 
 __all__ = ["LabelNode"]

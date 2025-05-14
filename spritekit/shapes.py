@@ -17,7 +17,7 @@
 
 import math
 
-from . import _drawable as drawable
+from ._drawable import Drawable
 
 from pyglm import glm
 
@@ -55,7 +55,7 @@ def _rect_points(x, y, w, h, rotation, scale):
 def _rotate_point(x, y, c, s):
     return glm.vec2(x * c - y * s, x * s + y * c)
 
-class LineNode(drawable.Drawable):
+class LineNode(Drawable):
     def __init__(self,
                  end: glm.vec2 | list[float] | tuple[float, float] = (0., 0.),
                  **kwargs):
@@ -87,7 +87,7 @@ class LineNode(drawable.Drawable):
     def _generate_outline_vertices(self):
         return self._generate_vertices()
 
-class RectNode(drawable.Drawable):
+class RectNode(Drawable):
     def __init__(self,
                  size: glm.vec2 | list | tuple = (1., 1.),
                  **kwargs):
@@ -125,7 +125,7 @@ class RectNode(drawable.Drawable):
                 *_line_vertices(*p1, *p3, *self._color, self._thickness),
                 *_line_vertices(*p2, *p4, *self._color, self._thickness)]
 
-class EllipseNode(drawable.Drawable):
+class EllipseNode(Drawable):
     def __init__(self,
                  width: float = 1.,
                  height: float = 1.,
@@ -229,7 +229,7 @@ class CircleNode(EllipseNode):
         self._radius = value
         self._dirty = True
 
-class PolygonNode(drawable.Drawable):
+class PolygonNode(Drawable):
     def __init__(self,
                  points: list | tuple,
                  sort: bool = False,

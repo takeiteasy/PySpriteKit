@@ -21,11 +21,9 @@ from .audio import *
 from .cache import *
 from .camera import *
 from .easing import *
-from .emitter import *
 from .label import *
 from .main import *
 from .scene import *
 from .shapes import *
 from .sprite import *
 from .timer import *
-from .window import *

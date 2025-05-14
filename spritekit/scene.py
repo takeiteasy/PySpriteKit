@@ -19,10 +19,10 @@ from typing import Optional
 from enum import Enum
 from dataclasses import dataclass, field
 
-from .window import EventType
+from ._window import EventType
+from ._drawable import convert_color
 from .actor import ActorParent
 from . import _renderer as renderer
-from . import _drawable as drawable
 from .camera import Camera
 
 import transitions
@@ -49,7 +49,7 @@ class Scene(SceneType, ActorParent):
     
     @clear_color.setter
     def clear_color(self, value: tuple | list):
-        renderer.set_clear_color(drawable.convert_color(value))
+        renderer.set_clear_color(convert_color(value))
     
     @property
     def camera(self):
@@ -82,7 +82,7 @@ class Scene(SceneType, ActorParent):
     def draw(self):
         if not self.children:
             return
-        if self.camera.dirty:
+        if self.camera._dirty:
             renderer.set_world_matrix(self.camera.matrix)
         for i in range(len(self.children) - 1, -1, -1):
             self.children[i].draw()
